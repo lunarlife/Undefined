@@ -5,6 +5,6 @@ namespace Events.Scene
 
     public abstract class SceneEvent : Event
     {
-        public abstract global::GameEngine.Scenes.Scene Scene { get; }
+        public abstract global::GameEngine.Scenes.OldScene Scene { get; }
     }
 }

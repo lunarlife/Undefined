@@ -85,16 +85,23 @@ namespace GameEngine
 
         private void Awake()
         {
+            LoadAssemblies();
             DontDestroyOnLoad(gameObject);
             IsAsyncTickWorking = true;
             IsAsyncFixedTickWorking = true;
             IsOneSecondTickWorking = true;
             Undefined.Startup();
         }
-
+        private static void LoadAssemblies()
+        {
+            AppDomain.CurrentDomain.Load("Utils");
+            AppDomain.CurrentDomain.Load("UECS");
+            AppDomain.CurrentDomain.Load("Networking");
+            AppDomain.CurrentDomain.Load("UndefinedNetworking");
+        }
         private async void Update()
         {
-            if (Undefined.Canvas?.GetComponentOfType<CanvasComponent>() is { Component: { } } canvas && Undefined.Camera is not null)
+            if (Undefined.Canvas?.GetComponent<CanvasComponent>() is { Component: { } } canvas && Undefined.Camera is not null)
             {
                 var canvasComponent = (Canvas)canvas.Component;
                 if (!UIScale.Equals(canvasComponent.scaleFactor))

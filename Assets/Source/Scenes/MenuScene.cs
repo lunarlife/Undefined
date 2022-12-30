@@ -1,13 +1,9 @@
 using Events.UI;
 using Events.UI.Mouse;
 using GameEngine;
-using GameEngine.GameObjects;
 using GameEngine.Scenes;
-using UndefinedNetworking.GameEngine;
-using UndefinedNetworking.GameEngine.UI.Elements.Structs;
 using Utils.AsyncOperations;
 using Utils.Events;
-using Rect = Utils.Rect;
 
 namespace Scenes
 {
@@ -20,11 +16,7 @@ namespace Scenes
         public override void OnLoading(AsyncOperationInfo<SceneLoadingState> info)
         {
             this.RegisterListener();
-            var text = new Text(new Rect(20, 20 , 200, 50), new FontSize(36), bind: new UIBind
-            {
-                Side = Side.Center,
-            }, content: "test text");
-            Undefined.Player.Open(text);
+
             /*var rect = new Rect(20, 20, 200, 50);
             var gameText = new Text(fontSize: new FontSize(36), rect: Rect.Zero, bind: new UIBind
             {
@@ -82,7 +74,7 @@ namespace Scenes
         }
         private void OnGameStart(ButtonClickEvent button)
         {
-            Scene.LoadScene<GameScene>();
+            OldScene.LoadScene<GameScene>();
         }
     }
 }

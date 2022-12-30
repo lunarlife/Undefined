@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace GameEngine.Components
 {
-    public record CanvasComponent : UIUnityComponentAdapter
+    public record CanvasComponent : UIUnityComponent
     {
         private float _planeDistance;
         private RenderMode _renderMode;

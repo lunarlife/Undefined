@@ -1,16 +1,11 @@
 using Events.Tick;
-using GameEngine.GameObjects.Core;
-using UndefinedNetworking.GameEngine;
-using UndefinedNetworking.GameEngine.UI.Elements.Structs;
-using UnityEngine;
 using Utils.Events;
-using Color = Utils.Color;
 using Rect = Utils.Rect;
 
 namespace GameEngine.GameObjects
 {
     //TODO: update to new system
-    public class ScrollerView : RectMask
+    public class ScrollerView 
     {
         private Panel _content;
         private Rect _viewRect;
@@ -19,7 +14,7 @@ namespace GameEngine.GameObjects
         public float HorizontalScrollSpeed { get; set; }
         public float VerticalScrollSpeed { get; set; }
         
-        public ScrollerView(Rect rect, Rect viewRect, bool isHorizontalScroll, bool isVerticalScroll, float horizontalScrollSpeed, float verticalScrollSpeed, Sprite background = null, Color? backgroundColor = null, UIBind? bind = null, Side pivot = Side.Center, int layer = 0, UIElement parent = null, string name = "", bool isActive = true) 
+        /*public ScrollerView(Rect rect, Rect viewRect, bool isHorizontalScroll, bool isVerticalScroll, float horizontalScrollSpeed, float verticalScrollSpeed, Sprite background = null, Color? backgroundColor = null, UIBind? bind = null, Side pivot = Side.Center, int layer = 0, UIElement parent = null, string name = "", bool isActive = true) 
             : base(new Rect(rect.Position, viewRect.Width, viewRect.Height), Margins.Zero, name, bind, pivot, layer, parent, isActive)
         {
             _viewRect = viewRect;
@@ -29,7 +24,7 @@ namespace GameEngine.GameObjects
             HorizontalScrollSpeed = horizontalScrollSpeed;
             VerticalScrollSpeed = verticalScrollSpeed;
             ViewRect = viewRect;
-        }
+        }*/
 
         public void SetRect(Rect rect) // todo: rename
         {
@@ -37,10 +32,11 @@ namespace GameEngine.GameObjects
             UpdateRect();
         }
 
+        /*
         public void AddElement(UIElement element)
         {
-            /*element.Transform.Parent = _content.Transform*/
-        }
+            /*element.Transform.Parent = _content.Transform#1#
+        }*/
 
         [EventHandler]
         private void OnAsyncTick(AsyncTickEvent e)

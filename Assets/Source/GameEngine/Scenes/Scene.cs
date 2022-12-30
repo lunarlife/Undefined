@@ -1,61 +1,83 @@
-using System.Threading.Tasks;
-using Events.Scene;
+using System.Collections.Generic;
+using System.Linq;
+using GameEngine.Exceptions;
 using GameEngine.GameObjects.Core;
-using Utils.AsyncOperations;
+using Networking;
+using UndefinedNetworking.Events.ObjectEvents;
+using UndefinedNetworking.Events.SceneEvents;
+using UndefinedNetworking.Events.UIEvents;
+using UndefinedNetworking.Exceptions;
+using UndefinedNetworking.GameEngine;
+using UndefinedNetworking.GameEngine.Objects;
+using UndefinedNetworking.GameEngine.Scenes;
+using UndefinedNetworking.GameEngine.UI;
 using Utils.Events;
 
 namespace GameEngine.Scenes
 {
-
-    public sealed class Scene : IEventCaller
+    public class Scene : IScene
     {
-        private readonly SceneLoader _loader;
-        private readonly object _syncLock = new();
-        private readonly object _asyncLock = new();
-        public static Scene CurrentScene { get; private set; }
+        private readonly Dictionary<Identifier, IObjectBase> _objects = new();
+        public ISceneViewer Viewer { get; }
+        public IEnumerable<IObjectBase> Objects => _objects.Values;
+        public SceneType Type { get; }
 
-        public string SceneName { get; }
-
-        private Scene(SceneLoader loader)
+        public Scene(ISceneViewer viewer)
         {
-            _loader = loader;
-            SceneName = loader.SceneName;
+            Viewer = viewer;
+            Type = SceneType.XYZ;
+            EventManager.CallEvent(new SceneLoadEvent(this));
         }
-
-        private async void Load(AsyncOperationInfo<SceneLoadingState> info)
-        {
-            info.SetFinishCallback(op => ULogger.ShowInfo($"Scene {SceneName} loaded"));
-            info.Start(new SceneLoadingState
-            {
-                State = $"Loading {SceneName}",
-                LoadComplete = 0
-            });
-            await Task.Run(() =>
-            {
-                CurrentScene = this;
-                this.RegisterListener();
-                _loader.OnLoading(info);
-                info.Finish();
-                CurrentScene?.Unload();
-                this.CallEvent(new SceneLoadedEvent(this));
-            });
-        }
-
-
         public void Unload()
         {
-            CurrentScene = null;
-            this.UnregisterEventsSafity();
-            this.CallEvent(new SceneUnloadEvent(this));
+            EventManager.CallEvent(new SceneUnloadEvent(this));
         }
-        
-        public static (T loader, AsyncOperationInfo<SceneLoadingState> info) LoadScene<T>() where T : SceneLoader, new()
+
+        public IUIView OpenView(ViewParameters parameters)
+        { 
+            var view = new UIView(Viewer, parameters);
+            _objects.Add(view.Identifier, view);
+            EventManager.CallEvent(new UIOpenEvent(view));
+            return view;
+        }
+        public IUIView OpenNetworkView(Identifier identifier)
         {
-            var loader = new T();
-            var scene = new Scene(loader);
-            var asyncOperation = new AsyncOperationInfo<SceneLoadingState>(20);
-            scene.Load(asyncOperation);
-            return (loader, asyncOperation);
+            var view = new NetworkUIView(Viewer, identifier);
+            _objects.Add(view.Identifier, view);
+            EventManager.CallEvent(new UIOpenEvent(view));
+            return view;
+        }
+        public void CloseView(IUIView view)
+        {
+            if (!Objects.Contains(view)) throw new ObjectException("unknown object");
+            _objects.Remove(view.Identifier);
+            EventManager.CallEvent(new UICloseEvent(view));
+        }
+
+        public void DestroyObject(IGameObject obj)
+        {
+            if (!Objects.Contains(obj)) throw new ObjectException("unknown object");
+            _objects.Remove(obj.Identifier);
+            EventManager.CallEvent(new ObjectDestroyEvent(obj));
+        }
+        public IUIView GetView(Identifier identifier)
+        {
+            var b = !_objects.ContainsKey(identifier);
+            if (b) return null;
+
+            var objectBase = _objects[identifier];
+            return objectBase as IUIView ?? throw new ViewException("view not found");
+        }
+
+        public bool TryGetView(Identifier identifier, out IUIView? view)
+        {
+            if (!_objects.ContainsKey(identifier) || _objects[identifier] is not IUIView v)
+            {
+                view = null;
+                return false;
+            }
+            view = v;
+            return true;
         }
     }
 }

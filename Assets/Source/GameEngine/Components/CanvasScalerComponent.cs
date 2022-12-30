@@ -4,7 +4,7 @@ using Utils.Dots;
 
 namespace GameEngine.Components
 {
-    public record CanvasScalerComponent : UIUnityComponentAdapter
+    public record CanvasScalerComponent : UIUnityComponent
     {
         private CanvasScaler.ScaleMode _scaleMode;
         private Dot2 _referenceResolution;

@@ -2,52 +2,37 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Events.UI;
 using GameEngine.GameObjects.Core.Unity;
 using Networking;
-using Networking.DataConvert.DataUse;
 using UndefinedNetworking.Exceptions;
 using UndefinedNetworking.GameEngine;
+using UndefinedNetworking.GameEngine.Scenes;
 using UndefinedNetworking.GameEngine.UI;
 using UndefinedNetworking.GameEngine.UI.Components;
-using Utils.Events;
+using Utils;
 
 namespace GameEngine.GameObjects.Core
 {
-    public sealed class NetworkUIView : ObjectCore, IUIView, IEventCaller<UICloseEvent>
+    public sealed class NetworkUIView : ObjectCore, IUIView
     {
-        private static readonly PropertyInfo ComponentInfo = typeof(UIUnityComponentAdapter).GetProperty("Component", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
         private static readonly PropertyInfo TargetViewProperty = typeof(UIComponent).GetProperty("TargetView", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)!;
+        private static readonly MethodInfo InitializeVoid = ReflectionUtils.GetMethod(typeof(Component), "Initialize")!;
         private readonly List<UIComponent> _components = new();
-        private readonly RectTransform _transform;
         private readonly UnityEngine.RectTransform _unityTransform;
         private readonly List<NetworkUIView> _childs;
 
 
-        public IRectTransform Transform => _transform;
+        public RectTransform Transform { get; private set; }
         public Identifier Identifier { get; }
-        public IUIViewer Viewer { get; }
-        public IUIElement TargetElement { get; }
-        public IEnumerable<Component> Components => _components;
+        public ISceneViewer Viewer { get; }
+        public IEnumerable<UIComponent> Components => _components;
 
 
-        private NetworkUIView(NetworkUIElement element, IUIViewer viewer, NetworkUIView parent)
+        public NetworkUIView(ISceneViewer viewer, Identifier identifier)
         {
-            Identifier = element.Identifier;//я тебя люблю
+            Identifier = identifier;
             Viewer = viewer;
-            TargetElement = element;
-            var parameters = element.CreateNewView(viewer);
             _unityTransform = (Instance as UnityUIObject)!.Transform;
-            _transform = new RectTransform(_unityTransform, this, parent is null ? Undefined.Canvas.Transform : parent.Transform,
-                parameters.IsActive,
-                parameters.Layer, parameters.Margins, parameters.OriginalRect, parameters.Pivot, parameters.Bind);
-            _childs = element.Childs.Select(ch => new NetworkUIView(ch as NetworkUIElement, viewer)).ToList();
-            element.OnCreateView(this);
-        }
-
-        public NetworkUIView(NetworkUIElement element, IUIViewer viewer) : this(element, viewer, null)
-        {
-            
         }
 
         protected override void DoDestroy()
@@ -63,37 +48,37 @@ namespace GameEngine.GameObjects.Core
         {
             if (!type.IsSubclassOf(typeof(UIComponent))) throw new ComponentException($"type is not {nameof(UIComponent)}");
             var component = (Activator.CreateInstance(type) as UIComponent)!;
-            InitializeComponent(component);
+            InitializeComponent(component); 
+            if (component is RectTransform transform)
+            {
+                transform.Parent ??= Undefined.Canvas.Transform;
+                Transform = transform;
+            }
+            component.Update();
             return component;
         }
 
         public UIComponent[] AddComponents(params Type[] types) => types.Select(AddComponent).ToArray();
-
-        public void AddNetworkComponent(UINetworkComponent component)
-        {
-            if (_components.Contains(component)) throw new ComponentException("component is already exists");
-            if (component.TargetView != null) throw new ComponentException("view already has a target view");
-            // ReSharper disable once HeuristicUnreachableCode
-            InitializeComponent(component);
-            Undefined.CallSynchronously(component.Update);
-        }
+        
         private void InitializeComponent(UIComponent component)
         {
             TargetViewProperty.SetValue(component, this);
+            RequireComponent.AddRequirements(component, this);
+            InitializeVoid.Invoke(component, Array.Empty<object>());
             _components.Add(component);
         }
         public void Close()
         {
-            Viewer.Close(this);
+            Destroy();
         }
 
-        public bool ContainsComponent<T>() where T : UIComponent => GetComponentOfType(typeof(T)) != null;
+        public bool ContainsComponent<T>() where T : UIComponent => GetComponent(typeof(T)) != null;
 
-        public bool ContainsComponent(Type type) => GetComponentOfType(type) != null;
+        public bool ContainsComponent(Type type) => GetComponent(type) != null;
 
-        public T GetComponentOfType<T>() where T : UIComponent => _components.FirstOrDefault(c => c.GetType() == typeof(T)) as T;
+        public T GetComponent<T>() where T : UIComponent => _components.FirstOrDefault(c => c.GetType() == typeof(T)) as T;
 
-        public UIComponent GetComponentOfType(Type type) => _components.FirstOrDefault(c => c.GetType() == type);
+        public UIComponent GetComponent(Type type) => _components.FirstOrDefault(c => c.GetType() == type);
         public static implicit operator UnityEngine.RectTransform(NetworkUIView view) => view._unityTransform;
 
 

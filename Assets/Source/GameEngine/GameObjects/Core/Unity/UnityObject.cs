@@ -42,7 +42,6 @@ namespace GameEngine.GameObjects.Core.Unity
             if (!IsDestroyed || Object is not null) return;
             IsDestroyed = true;
             transform.SetParent(PoolObjectsParent);
-            await Task.Run(() => EventManager.CallEvent(new ObjectDestroyEvent(Object)));
         }
     }
 }

@@ -128,7 +128,7 @@ SubShader {
 			UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
 
 			float bold = step(input.texcoord1.y, 0);
-
+			
 			float4 vert = input.vertex;
 			vert.x += _VertexOffsetX;
 			vert.y += _VertexOffsetY;
@@ -188,6 +188,7 @@ SubShader {
 			output.underlayParam = half2(layerScale, layerBias);
 			#endif
 
+			
 			return output;
 		}
 

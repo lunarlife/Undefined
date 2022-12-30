@@ -1,23 +1,8 @@
-using System.Collections.Generic;
-using Events.Tick;
-using GameEngine.Exceptions;
-using GameEngine.GameObjects;
-using GameEngine.GameObjects.Core;
-using UndefinedNetworking.GameEngine;
-using UndefinedNetworking.GameEngine.Input;
-using UndefinedNetworking.GameEngine.UI.Components;
-using UndefinedNetworking.GameEngine.UI.Elements.Structs;
-using UnityEngine;
-using Utils.Dots;
-using Utils.Events;
-using Color = Utils.Color;
-using Rect = Utils.Rect;
-
 namespace GameEngine.UI.Windows
 {
-    public abstract class Window : UIElement
+    public abstract class Window 
     {
-        private static List<UIView> _floatingWindows = new();
+        /*private static List<UIView> _floatingWindows = new();
         private static UIView _targetWindow;
         private static Dot2Int? _movePos;
         private List<UIElement> _elements = new();
@@ -54,7 +39,7 @@ namespace GameEngine.UI.Windows
             if (element.Transform.Parent?.TargetView is not Canvas)
                 throw new WindowException("Element has parent");
             element.Transform.Parent = _contentPanel.Transform;
-            _elements.Add(element);*/
+            _elements.Add(element);#1#
         }
 
         public void Remove(UIElement element)
@@ -93,7 +78,7 @@ namespace GameEngine.UI.Windows
                         MathUtils.ClampOut(contentPosition.Y + move.Y, -scrollSize.Y + currentRect.Height, 0));
                     _contentPanel.Transform.OriginalRect = new Rect(pos, scrollSize.X, scrollSize.Y);
                 }
-            }    */
+            }    #1#
             /*if(_targetWindow is null) return;
             var menuRect = _targetWindow._menuRect;
             var transform = _targetWindow.Transform;
@@ -115,7 +100,7 @@ namespace GameEngine.UI.Windows
             transform.OriginalRect =
                 new Rect(new Dot2Int(rect.Position.X, rect.Position.Y - transform.OriginalRect.Height),
                     transform.OriginalRect.Width, transform.OriginalRect.Height);
-            _targetWindow._menuRect = rect;*/
+            _targetWindow._menuRect = rect;#1#
 
         }
         [EventHandler]
@@ -138,10 +123,10 @@ namespace GameEngine.UI.Windows
                     {
                         _targetWindow = window;
                         break;                            
-                    }*/
+                    }#1#
                     _targetWindow = null;
                 }
             
-        }
+        }*/
     }
 }

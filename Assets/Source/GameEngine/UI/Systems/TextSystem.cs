@@ -18,7 +18,6 @@ namespace GameEngine.UI.Systems
         {
             foreach (var result in _filter)
             {
-                Undefined.Logger.Info(result.Get1().Text);
                 var component = result.Get1();
                 var text = ((ObjectCore)component.TargetView).GetOrAddUnityComponent<TextMeshProUGUI>();
                 text.color = component.Color.ToUnityColor();
@@ -39,6 +38,7 @@ namespace GameEngine.UI.Systems
                 text.characterSpacing = size.CharacterSpacing;
                 text.characterWidthAdjustment = size.CharacterWidthAdjustment;
                 text.text = component.Text;
+                component.TargetView.Transform.Update();
             }
         }
     }

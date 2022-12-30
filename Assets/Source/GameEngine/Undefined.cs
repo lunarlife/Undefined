@@ -18,24 +18,26 @@ using Networking;
 using Networking.DataConvert;
 using Networking.Loggers;
 using Networking.Packets;
-using Scenes;
 using UECS;
 using UndefinedNetworking;
-using UndefinedNetworking.Converters;
 using UndefinedNetworking.GameEngine;
 using UndefinedNetworking.GameEngine.Input;
+using UndefinedNetworking.GameEngine.Scenes;
 using UndefinedNetworking.GameEngine.UI;
+using UndefinedNetworking.GameEngine.UI.Components;
+using UndefinedNetworking.GameEngine.UI.Elements.Structs;
 using UndefinedNetworking.Gameplay.Chat;
+using UndefinedNetworking.Packets.Components;
 using UndefinedNetworking.Packets.Player;
 using UndefinedNetworking.Packets.Server;
 using UndefinedNetworking.Packets.UI;
 using UndefinedNetworking.Packets.World;
+using UnityEngine;
 using Utils;
 using Utils.Dots;
 using Utils.Enums;
 using Utils.Events;
-using Camera = GameEngine.GameObjects.Camera;
-using Canvas = GameEngine.GameObjects.Canvas;
+using Color = Utils.Color;
 using Logger = Networking.Loggers.Logger;
 
 namespace GameEngine
@@ -59,7 +61,7 @@ namespace GameEngine
         public static bool IsSynchronously => Environment.CurrentManagedThreadId == _mainThreadId;
         public static bool IsStarted { get; private set; }
         public static IUIView Canvas { get; private set; }
-        public static Scene CurrentScene => Scene.CurrentScene; 
+        public static OldScene CurrentScene => OldScene.CurrentScene; 
         public static IUIView Camera { get; private set; }
         public static Dot2Int MouseScreenPositionUnscaled => EngineEventsInvoker.MouseScreenPositionUnscaled;
         public static Dot2Int MouseScreenPosition => EngineEventsInvoker.MouseScreenPosition;
@@ -88,7 +90,6 @@ namespace GameEngine
             }
             else
             {
-                LoadAssemblies();
                 Data.Load();
                 NetworkData.LoadNetworkData();
                 EventManager.RegisterStaticEvents(typeof(Undefined));
@@ -98,30 +99,52 @@ namespace GameEngine
                 Settings.ResolutionUnscaled = Settings.MinResolution;
                 CallSynchronously(new ActionCallback(() =>
                 {
-                    Player = new UnityEngine.GameObject("PLAYER").AddComponent<Player>();
+                    Player = new GameObject("PLAYER").AddComponent<Player>();
                 }, () =>
                 {
-                    Camera = Player.Open(new Camera());
-                    var camera = Camera.GetComponentOfType<CameraComponent>();
-                    Canvas = Player.Open(new Canvas(camera: camera));
+                    Player.LoadScene(SceneType.XY);   
+                    Camera = Player.ActiveScene.OpenView(new ViewParameters());
+                    var camera = Camera.AddComponent<CameraComponent>();
+                    camera.Orthographic = true;
+                    camera.OrthographicSize = 10;
+                    camera.FarClipPlane = 40;
+                    camera.NearClipPlane = .3f;
+                    Canvas = Player.ActiveScene.OpenView(new ViewParameters
+                    {
+                        OriginalRect = Settings.ResolutionUnscaled
+                    });
+                    var canvas = Canvas.AddComponent<CanvasComponent>();
+                    canvas.PlaneDistance = 10;
+                    canvas.Camera = camera;
+                    canvas.RenderMode = RenderMode.ScreenSpaceCamera;
+                    Canvas.AddComponents<CanvasScalerComponent, GraphicRaycasterComponent>();
                     LoadMenuScene();
                 }));
             }
         }
 
-        private static void LoadAssemblies()
+        private static void Tests()
         {
-            AppDomain.CurrentDomain.Load("Utils");
-            AppDomain.CurrentDomain.Load("UECS");
-            AppDomain.CurrentDomain.Load("Networking");
-            AppDomain.CurrentDomain.Load("UndefinedNetworking");
+            var text = Player.ActiveScene.OpenView(new ViewParameters
+            {
+                Bind = new UIBind
+                {
+                    Side = Side.TopRight
+                },
+                OriginalRect = new Utils.Rect(100, 100, 100, 100)
+            }).AddComponent<TextComponent>();
+            text.Size = new FontSize(24);
+            text.Color = Color.Black;
+            text.Text = _nickname;
         }
+
 
         private static async void LoadMenuScene()
         {
-            var (loader, info) = Scene.LoadScene<MenuScene>();
-            info.Wait();
+            //var (loader, info) = OldScene.LoadScene<MenuScene>();
+            //info.Wait();
             var result = await Connect(IPAddress.Parse("127.0.0.1"), 2402, "lunarlifekekw");
+            Tests();
             ULogger.ShowInfo("result: " + result);
         }
 
@@ -133,6 +156,9 @@ namespace GameEngine
             _systems.Register(new TextSystem());
             _systems.Register(new MouseHandlersSystem());
             _systems.Register(new WindowFloatingSystem());
+            _systems.Register(new RectTransformSystem());
+            _systems.Register(new ScrollSystem());
+            _systems.Register(new RectMaskSystem());
             var netSystem = new NetComponentSystem();
             DataConverter.AddDynamicConverter(netSystem);
             _systems.Register(netSystem);
@@ -225,17 +251,18 @@ namespace GameEngine
                     SendPackets(new ClientPingPacket());
                     break;
                 case UIViewOpenPacket viewOpenPacket:
-                    var open = Player.Open(new NetworkUIElement(viewOpenPacket.Parameters, viewOpenPacket.Identifier,
-                        viewOpenPacket.Components, null));
+                    Console.WriteLine("open");
+                    var open = (NetworkUIView)((Scene)Player.ActiveScene).OpenNetworkView(viewOpenPacket.Identifier);
                     break;
                 case UIViewClosePacket viewClosePacket:
-                    var view = Player.ViewElements.FirstOrDefault(v => v.Identifier == viewClosePacket.Identifier);
-                    if (view == null)
+                    if (!Player.ActiveScene.TryGetView(viewClosePacket.Identifier, out var view))
                     {
                         DisconnectServer(DisconnectCause.InvalidPacket, "");
                         break;
                     }
-                    Player.Close(view);
+                    Player.ActiveScene.CloseView(view);
+                    break;
+                case UIComponentUpdatePacket updatePacket:
                     break;
             }
         }
@@ -260,6 +287,10 @@ namespace GameEngine
             DisconnectLocal(cause, message);
         }
 
+        public static void LeaveFromServer()
+        {
+            DisconnectServer(DisconnectCause.Leave, "");
+        }
         [EventHandler]
         private static void OnEngineStop(EngineStopEvent e)
         {

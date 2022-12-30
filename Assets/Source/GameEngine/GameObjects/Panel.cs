@@ -1,6 +1,4 @@
-using GameEngine.GameObjects.Core;
 using UndefinedNetworking.GameEngine;
-using UndefinedNetworking.GameEngine.UI;
 using UndefinedNetworking.GameEngine.UI.Elements.Structs;
 using UnityEngine;
 using UnityEngine.UI;
@@ -10,7 +8,7 @@ using Rect = Utils.Rect;
 namespace GameEngine.GameObjects
 {
     //TODO: update to new system
-    public class Panel : UIElement
+    public class Panel
     {
         private Image _image;
         private readonly Rect _rect;
@@ -23,7 +21,7 @@ namespace GameEngine.GameObjects
         private Color _color;
 
         public Panel(Rect rect, Margins? margins = null, Sprite sprite = null, Color? color = null, UIBind? bind = null,
-            Side pivot = Side.Center, int layer = 0, UIElement parent = null, string name = "", bool isActive = true)
+            Side pivot = Side.Center, int layer = 0, string name = "", bool isActive = true)
         {
             _rect = rect;
             _margins = margins ?? Margins.Zero;
@@ -34,7 +32,7 @@ namespace GameEngine.GameObjects
             _isActive = isActive;
             _color = color ?? Color.White;
         }
-        public override ViewParameters CreateNewView(IUIViewer viewer) => new()
+        /*public override ViewParameters CreateNewView(IUIViewer viewer) => new()
         {
             OriginalRect = _rect,
             Margins = _margins,
@@ -42,6 +40,6 @@ namespace GameEngine.GameObjects
             Pivot = _pivot,
             Bind = _bind,
             IsActive = _isActive
-        };
+        };*/
     }
 }

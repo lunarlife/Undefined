@@ -1,42 +1,45 @@
 using System.Collections.Generic;
 using System.Data;
-using UnityEngine;
+using GameEngine.Resources;
+using UndefinedNetworking.GameEngine.Resources;
 using Utils;
-using Rect = UnityEngine.Rect;
 
 namespace GameData
 {
     public static class Data
     {
         private static bool _isLoaded;
-        private static Dictionary<string, Sprite> _sprites = new();
-        public static Version Version { get; } = new("0.1alpha");
+        private static readonly Dictionary<string, Sprite> Sprites = new();
+        private static readonly Dictionary<string, ExternalShader> ExternalShaders = new();
+        private static readonly Dictionary<InternalShaderType, InternalShader> InternalShaders = new();
 
+        public static Version Version { get; } = new("0.1alpha");
+        
+        
         public static void Load()
         {
-            if (_isLoaded) throw new DataException("Data is load(dead)");
-
-            AddTextureInResources("chat", "Chat/Chat");
-            AddTextureInResources("chat_type_but", "Chat/Button");
-            AddTextureInResources("chat_avatar_frame", "Chat/FrameAvatar");
-            AddTextureInResources("chat_standard_avatar", "Chat/StandardAvatar");
-            AddTextureInResources("chat_message_panel", "Chat/MessagePanel");
+            if (_isLoaded) throw new DataException("Data is loaded");
             _isLoaded = true;
+            LoadInternalShader(InternalShaderType.ObjectRectMask, "Shaders/RectMask_Shader");
+            LoadInternalShader(InternalShaderType.RectMaskWorld, "Shaders/WorldRectMask_Shader");
         }
-
-        private static void AddTextureInResources(string name, string path)
+        private static void LoadSprite(string name, string path) => Sprites.Add(name, new Sprite(path, name));
+        public static ISprite GetSprite(string name)
         {
-            var texture2D = Resources.Load<Texture2D>(path);
-            var sprite = Sprite.Create(texture2D, new Rect(0, 0, texture2D.width, texture2D.height), Vector2.zero);
-            _sprites.Add(name,sprite); 
+            if (!Sprites.ContainsKey(name)) throw new DataException("sprite not found");
+            return Sprites[name];
         }
-
-
-
-        public static Sprite GetSprite(string name)
+        private static void LoadInternalShader(InternalShaderType type, string path) => InternalShaders.Add(type, new InternalShader(path, type.ToString()));
+        private static void LoadExternalShader(string name, string path) => ExternalShaders.Add(name, new ExternalShader(path, name));
+        public static ExternalShader GetExternalShader(string name)
         {
-            if (!_sprites.ContainsKey(name)) throw new DataException($"Dict has not {name} texture");
-            return _sprites[name];
+            if (!ExternalShaders.ContainsKey(name)) throw new DataException("shader not found");
+            return ExternalShaders[name];
+        }
+        public static InternalShader GetInternalShader(InternalShaderType type)
+        {
+            if (!InternalShaders.ContainsKey(type)) throw new DataException("shader not found");
+            return InternalShaders[type];
         }
     }
 }

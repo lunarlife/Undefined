@@ -6,7 +6,6 @@ using GameEngine.GameObjects.Core.Unity;
 using UndefinedNetworking.Exceptions;
 using UndefinedNetworking.GameEngine.UI;
 using UnityEngine;
-using Utils.Events;
 using Utils.Pool;
 using Object = UnityEngine.Object;
 
@@ -14,7 +13,6 @@ namespace GameEngine.GameObjects.Core
 {
     public abstract class ObjectCore : IDisposable
     {
-
         private static readonly ObjectPool<UnityObject> GameObjects = new();
         private static readonly ObjectPool<UnityObject> UIObjects = new();
         
@@ -23,7 +21,21 @@ namespace GameEngine.GameObjects.Core
         private bool _isActive;
         private ObjectCore _parent;
         private readonly List<Component> _unityComponents = new();
+        private List<ObjectCore> _localChilds = new();
         public bool IsDestroyed { get; private set; }
+
+        public ObjectCore LocalParent
+        {
+            get => _parent;
+            set
+            {
+                _parent?._localChilds.Remove(this);
+                Instance.transform.SetParent((_parent = value).GetUnityComponent<Transform>());
+                _parent?._localChilds.Add(this);
+            }
+        }
+
+        public IReadOnlyList<ObjectCore> LocalChilds => _localChilds;
 
         public string Name
         {
@@ -50,14 +62,28 @@ namespace GameEngine.GameObjects.Core
         public T GetOrAddUnityComponent<T>() where T : Component =>
             GetUnityComponent<T>() ?? AddUnityComponent<T>();
 
-        public Component GetUnityComponent(Type type) => _unityComponents.FirstOrDefault(c => c.GetType() == type);
+        public Component GetUnityComponent(Type type)
+        {
+            var component = _unityComponents.FirstOrDefault(c => c.GetType() == type);
+            if (!component)
+            {
+                component = Instance.GetComponent(type);
+                if (component)
+                    _unityComponents.Add(component);
+                else component = null;
+            }
+            return component;
+        }
+
         public Component AddUnityComponent(Type type)
         {
             if (type == null) throw new ComponentException("type cant be null");
             if (GetUnityComponent(type) != null)
                 throw new ComponentException("component is already exists");
-            var component = Instance.gameObject.AddComponent(type);
-            _unityComponents.Add(component);
+            var c = Instance.gameObject.GetComponent(type);
+            var component = c ? c : Instance.gameObject.AddComponent(type);
+            if(component is not null)
+                _unityComponents.Add(component);
             return component;
         }
         

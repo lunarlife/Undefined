@@ -1,6 +1,4 @@
-using GameEngine.GameObjects.Core;
 using UndefinedNetworking.GameEngine;
-using UndefinedNetworking.GameEngine.UI;
 using UndefinedNetworking.GameEngine.UI.Elements.Structs;
 using UnityEngine.UI;
 using Rect = Utils.Rect;
@@ -8,7 +6,7 @@ using Rect = Utils.Rect;
 namespace GameEngine.GameObjects
 {
     //TODO: update to new system
-    public class RectMask : UIElement
+    public class RectMask
     {
         private Margins _margins;
         private RectMask2D _mask;
@@ -24,7 +22,7 @@ namespace GameEngine.GameObjects
             }
         }
 
-        public RectMask(Rect rect, Margins margins, string name = "", UIBind? bind = null, Side pivot = Side.Center, int layer = 0, UIElement parent = null, bool isActive = true) 
+        public RectMask(Rect rect, Margins margins, string name = "", UIBind? bind = null, Side pivot = Side.Center, int layer = 0, bool isActive = true) 
         {/*
             if (rect.Width < margins.Left)
                 throw new MarginsException($"{nameof(margins.Left)} value: ({margins.Left}) must be less than {nameof(rect.Width)} value: ({rect.Width})");
@@ -47,9 +45,9 @@ namespace GameEngine.GameObjects
             _mask.padding = _margins.ToUnityPadding();
         }
 
-        public override ViewParameters CreateNewView(IUIViewer viewer)
+        /*public override ViewParameters CreateNewView(IUIViewer viewer)
         {
             throw new System.NotImplementedException();
-        }
+        }*/
     }
 }

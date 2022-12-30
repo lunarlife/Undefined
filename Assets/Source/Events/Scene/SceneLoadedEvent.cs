@@ -3,11 +3,11 @@ namespace Events.Scene
 
     public class SceneLoadedEvent : SceneEvent
     {
-        public SceneLoadedEvent(global::GameEngine.Scenes.Scene scene)
+        public SceneLoadedEvent(global::GameEngine.Scenes.OldScene scene)
         {
             Scene = scene;
         }
 
-        public override global::GameEngine.Scenes.Scene Scene { get; }
+        public override global::GameEngine.Scenes.OldScene Scene { get; }
     }
 }

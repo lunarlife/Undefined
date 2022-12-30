@@ -1,4 +1,7 @@
 using System;
+using System.Linq;
+using GameEngine.Scenes;
+using Networking;
 using Networking.DataConvert;
 using UECS;
 using UndefinedNetworking.GameEngine;
@@ -9,8 +12,8 @@ namespace GameEngine.UI.Systems
 
     public class NetComponentSystem : IAsyncSystem, IDynamicDataConverter
     {
-        [ChangeHandler] private Filter<UINetworkComponent> _changedUIs;
-        [AutoInject] private Filter<UINetworkComponent> _uis;
+        [ChangeHandler(true)] private Filter<UINetworkComponent> _changedUIs;
+        [AutoInject(true)] private Filter<UINetworkComponent> _uis;
 
         public void Init()
         {
@@ -34,7 +37,7 @@ namespace GameEngine.UI.Systems
         {
             var nc = (INetworkComponent)o;
             var serialize =
-                DataConverter.Serialize(o, ServerDataAttribute.DataId, converterUsing: ConverterUsing.ExcludeCurrent);
+                DataConverter.Serialize(o, ServerDataAttribute.DataId, converterUsing: ConvertType.ExcludeCurrent);
             return DataConverter.Combine(DataConverter.Serialize(nc.Identifier), serialize);
         }
 
@@ -42,7 +45,11 @@ namespace GameEngine.UI.Systems
         {
             ushort index = 0; 
             var cType = Component.GetComponentType(DataConverter.Deserialize<ushort>(data, ref index));
-            return DataConverter.Deserialize(data, cType, ref index, ClientDataAttribute.DataId, converterUsing: ConverterUsing.ExcludeCurrent);
+            var identifier = DataConverter.Deserialize<Identifier>(data, ref index);
+            if (!Undefined.Player.ActiveScene.TryGetView(identifier, out var view)) Undefined.LeaveFromServer();
+            var result = view.GetComponent(cType) ?? view.AddComponent(cType);
+            DataConverter.DeserializeInject(data, result, ref index, ClientDataAttribute.DataId);
+            return result;
         }
     }
 }

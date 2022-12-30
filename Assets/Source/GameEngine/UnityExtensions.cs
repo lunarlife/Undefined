@@ -176,6 +176,7 @@ namespace GameEngine
 
         public static Vector2 ToUnityVector(this Dot2 dot2) => new(dot2.X, dot2.Y);
         public static Vector2 ToUnityVector(this Dot2Int dot2) => new(dot2.X, dot2.Y);
+        public static Vector4 ToUnityVector(this Utils.Rect rect) => new(rect.Position.X, rect.Position.Y, rect.Width, rect.Height);
         public static Dot2 ToDot(this Vector2 dot2) => new(dot2.x, dot2.y);
         public static Dot2Int ToDot(this Vector2Int dot2) => new(dot2.x, dot2.y);
         public static Dot2 ToDot(this Vector3 dot2) => new(dot2.x, dot2.y);
