@@ -4,7 +4,7 @@ using System.Linq;
 using GameEngine.Exceptions;
 using GameEngine.GameObjects.Core.Unity;
 using UndefinedNetworking.Exceptions;
-using UndefinedNetworking.GameEngine.UI;
+using UndefinedNetworking.GameEngine.Scenes.UI;
 using UnityEngine;
 using Utils.Pool;
 using Object = UnityEngine.Object;
@@ -15,13 +15,22 @@ namespace GameEngine.GameObjects.Core
     {
         private static readonly ObjectPool<UnityObject> GameObjects = new();
         private static readonly ObjectPool<UnityObject> UIObjects = new();
-        
-        protected readonly UnityObject Instance;
-        private string _name;
-        private bool _isActive;
-        private ObjectCore _parent;
         private readonly List<Component> _unityComponents = new();
-        private List<ObjectCore> _localChilds = new();
+
+        protected readonly UnityObject Instance;
+        private bool _isActive;
+        private readonly List<ObjectCore> _localChilds = new();
+        private string _name;
+        private ObjectCore _parent;
+
+        public ObjectCore(string name = "")
+        {
+            var pool = this is IUIView ? UIObjects : GameObjects;
+            if (!pool.TryTake(out Instance)) throw new ObjectException("no objects in pool");
+            Instance.Object = this;
+            Name = name;
+        }
+
         public bool IsDestroyed { get; private set; }
 
         public ObjectCore LocalParent
@@ -43,24 +52,33 @@ namespace GameEngine.GameObjects.Core
             set
             {
                 _name = value ?? "";
-                Undefined.CallSynchronously(() => Instance.name = $"{{{GetType().Name}}}{(string.IsNullOrEmpty(_name) ? "" : "=>" + _name)}");
+                Undefined.CallSynchronously(() =>
+                    Instance.name = $"{{{GetType().Name}}}{(string.IsNullOrEmpty(_name) ? "" : "=>" + _name)}");
             }
         }
 
-        public ObjectCore(string name = "")
+        public void Dispose()
         {
-            var pool = this is IUIView ? UIObjects : GameObjects;
-            if (!pool.TryTake(out Instance)) throw new ObjectException("no objects in pool");
-            Instance.Object = this;
-            Name = name;
+            DestroyObject();
         }
+
         protected abstract void DoDestroy();
 
 
-        public T GetUnityComponent<T>() where T : Component => GetUnityComponent(typeof(T)) as T;
-        public T AddUnityComponent<T>() where T : Component => AddUnityComponent(typeof(T)) as T;
-        public T GetOrAddUnityComponent<T>() where T : Component =>
-            GetUnityComponent<T>() ?? AddUnityComponent<T>();
+        public T GetUnityComponent<T>() where T : Component
+        {
+            return GetUnityComponent(typeof(T)) as T;
+        }
+
+        public T AddUnityComponent<T>() where T : Component
+        {
+            return AddUnityComponent(typeof(T)) as T;
+        }
+
+        public T GetOrAddUnityComponent<T>() where T : Component
+        {
+            return GetUnityComponent<T>() ?? AddUnityComponent<T>();
+        }
 
         public Component GetUnityComponent(Type type)
         {
@@ -72,6 +90,7 @@ namespace GameEngine.GameObjects.Core
                     _unityComponents.Add(component);
                 else component = null;
             }
+
             return component;
         }
 
@@ -82,11 +101,11 @@ namespace GameEngine.GameObjects.Core
                 throw new ComponentException("component is already exists");
             var c = Instance.gameObject.GetComponent(type);
             var component = c ? c : Instance.gameObject.AddComponent(type);
-            if(component is not null)
+            if (component is not null)
                 _unityComponents.Add(component);
             return component;
         }
-        
+
         private void DestroyObject()
         {
             IsDestroyed = true;
@@ -96,20 +115,22 @@ namespace GameEngine.GameObjects.Core
                 foreach (var component in _unityComponents) Object.Destroy(component);
                 Instance.Object = null;
                 Instance.transform.parent = UnityObject.PoolObjectsParent;
-                if(Instance is UnityUIObject)
+                if (Instance is UnityUIObject)
                     UIObjects.Return(Instance);
-                else if(Instance is UnityGameObject)
+                else if (Instance is UnityGameObject)
                     GameObjects.Return(Instance);
             });
         }
+
         public static void CreateGameObjectsPoolInstances(int count)
         {
             var unityObjects = new UnityGameObject[count];
             for (var i = 0; i < count; i++)
             {
-                var gameObject = new UnityEngine.GameObject();
+                var gameObject = new GameObject();
                 unityObjects[i] = gameObject.AddComponent<UnityGameObject>();
             }
+
             GameObjects.Return(unityObjects);
         }
 
@@ -118,20 +139,17 @@ namespace GameEngine.GameObjects.Core
             var unityObjects = new UnityUIObject[count];
             for (var i = 0; i < count; i++)
             {
-                var gameObject = new UnityEngine.GameObject();
+                var gameObject = new GameObject();
                 unityObjects[i] = gameObject.AddComponent<UnityUIObject>();
             }
+
             UIObjects.Return(unityObjects);
         }
 
-       
+
         public void Destroy()
         {
             Dispose();
-        }
-        public void Dispose()
-        {
-            DestroyObject();
         }
     }
 }

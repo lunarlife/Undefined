@@ -3,7 +3,7 @@ using GameEngine.GameObjects.Core;
 using UECS;
 using UndefinedNetworking.Events.Mouse;
 using UndefinedNetworking.GameEngine.Input;
-using UndefinedNetworking.GameEngine.UI.Components.Mouse;
+using UndefinedNetworking.GameEngine.Scenes.UI.Components.Mouse;
 using UndefinedNetworking.Packets.Components;
 using Utils.Events;
 
@@ -11,19 +11,18 @@ namespace GameEngine.UI.Systems
 {
     public class MouseHandlersSystem : ISyncSystem
     {
-        [AutoInject] private Filter<MouseUpHandlerComponent> _upHandlers;
-        [AutoInject] private Filter<MouseHoldingHandlerComponent> _holdingHandlers;
         [AutoInject] private Filter<MouseDownHandlerComponent> _downHandlers;
-        [AutoInject] private Filter<MouseEnterHandlerComponent> _enterHandlers;
-        [AutoInject] private Filter<MouseExitHandlerComponent> _exitHandlers;
 
-        private HashSet<MouseEnterHandlerComponent> _enteredComponents = new();
-        private HashSet<MouseExitHandlerComponent> _exitedComponents = new();
+        private readonly HashSet<MouseEnterHandlerComponent> _enteredComponents = new();
+        [AutoInject] private Filter<MouseEnterHandlerComponent> _enterHandlers;
+        private readonly HashSet<MouseExitHandlerComponent> _exitedComponents = new();
+        [AutoInject] private Filter<MouseExitHandlerComponent> _exitHandlers;
+        [AutoInject] private Filter<MouseHoldingHandlerComponent> _holdingHandlers;
+        [AutoInject] private Filter<MouseUpHandlerComponent> _upHandlers;
 
 
         public void Init()
         {
-            
         }
 
         public void Update()
@@ -32,38 +31,41 @@ namespace GameEngine.UI.Systems
             {
                 var component = result.Get1();
                 var pHolding = component.IsHolding;
-                var holding = component.TargetView.Transform.AnchoredRect.DotInRect(Undefined.MouseScreenPosition) && Undefined.IsPressed(component.Keys);
+                var holding = component.TargetView.Transform.AnchoredRect.DotInRect(Undefined.MouseScreenPosition) &&
+                              Undefined.IsPressed(component.Keys);
                 component.IsHolding = holding;
                 if (!holding)
                 {
                     if (pHolding && component.TargetView is NetworkUIView)
-                    {
                         Undefined.SendPackets(new UIComponentUpdatePacket(component));
-                    }
                     continue;
                 }
+
                 component.CallEvent(new UIMouseHoldingEvent(component.TargetView));
                 if (pHolding || component.TargetView is not NetworkUIView) continue;
                 Undefined.SendPackets(new UIComponentUpdatePacket(component));
             }
+
             foreach (var result in _upHandlers)
             {
                 var component = result.Get1();
                 if (!Undefined.IsPressed(component.Keys, ClickState.Up)) continue;
                 if (!component.TargetView.Transform.AnchoredRect.DotInRect(Undefined.MouseScreenPosition)) continue;
                 component.CallEvent(new UIMouseUpEvent(component.TargetView));
-                if(component.TargetView is NetworkUIView)
+                if (component.TargetView is NetworkUIView)
                     Undefined.SendPackets(new UIComponentUpdatePacket(component));
-            }  
+            }
+
             foreach (var result in _downHandlers)
             {
                 var component = result.Get1();
                 if (!Undefined.IsPressed(component.Keys, ClickState.Down)) continue;
                 if (!component.TargetView.Transform.AnchoredRect.DotInRect(Undefined.MouseScreenPosition)) continue;
                 component.CallEvent(new UIMouseDownEvent(component.TargetView));
-                if(component.TargetView is NetworkUIView)
+                if (component.TargetView is NetworkUIView)
                     Undefined.SendPackets(new UIComponentUpdatePacket(component));
             }
+
             foreach (var result in _enterHandlers)
             {
                 var component = result.Get1();
@@ -74,11 +76,13 @@ namespace GameEngine.UI.Systems
                     if (_enteredComponents.Contains(component)) _enteredComponents.Remove(component);
                     continue;
                 }
-                if(!_enteredComponents.Contains(component))
+
+                if (!_enteredComponents.Contains(component))
                     _enteredComponents.Add(component);
-                if(component.TargetView is NetworkUIView)
+                if (component.TargetView is NetworkUIView)
                     Undefined.SendPackets(new UIComponentUpdatePacket(component));
             }
+
             foreach (var result in _exitHandlers)
             {
                 var component = result.Get1();
@@ -89,9 +93,10 @@ namespace GameEngine.UI.Systems
                     if (_exitedComponents.Contains(component)) _exitedComponents.Remove(component);
                     continue;
                 }
-                if(!_exitedComponents.Contains(component))
+
+                if (!_exitedComponents.Contains(component))
                     _exitedComponents.Add(component);
-                if(component.TargetView is NetworkUIView)
+                if (component.TargetView is NetworkUIView)
                     Undefined.SendPackets(new UIComponentUpdatePacket(component));
             }
         }

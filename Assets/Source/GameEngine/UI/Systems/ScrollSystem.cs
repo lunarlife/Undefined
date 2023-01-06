@@ -1,27 +1,22 @@
 using System.Linq;
-using GameData;
 using GameEngine.GameObjects.Core;
-using GameEngine.Resources;
 using UECS;
-using UndefinedNetworking.GameEngine.UI;
-using UndefinedNetworking.GameEngine.UI.Components;
-using UndefinedNetworking.GameEngine.UI.Components.RectMask;
+using UndefinedNetworking.GameEngine.Scenes.UI;
+using UndefinedNetworking.GameEngine.Scenes.UI.Components;
 using UnityEngine;
 using UnityEngine.UI;
 using Utils;
 using Utils.Dots;
 using Rect = Utils.Rect;
-using RectTransform = UndefinedNetworking.GameEngine.UI.Components.RectTransform;
-using Shader = UnityEngine.Shader;
 
 namespace GameEngine.UI.Systems
 {
     public class ScrollSystem : ISyncSystem
     {
+        [ChangeHandler] private Filter<ScrollComponent> _changedScrolls;
 
 
         [AutoInject] private Filter<ScrollComponent> _scrolls;
-        [ChangeHandler] private Filter<ScrollComponent> _changedScrolls;
 
         public void Init()
         {
@@ -29,7 +24,6 @@ namespace GameEngine.UI.Systems
 
         public void Update()
         {
-            
             foreach (var result in _scrolls)
             {
                 var component = result.Get1();
@@ -41,21 +35,24 @@ namespace GameEngine.UI.Systems
                     content = view.Viewer.ActiveScene.OpenView(new ViewParameters
                     {
                         Parent = transform,
-                        OriginalRect = new Rect(0,0, transform.OriginalRect.WidthHeight),
+                        OriginalRect = new Rect(0, 0, transform.OriginalRect.WidthHeight),
                         Margins = transform.Margins
                     });
                     content.Transform.Update();
                 }
+
                 for (var index = 0; index < transform.Childs.Count; index++)
                 {
                     var tr = transform.Childs[index];
-                    if(tr.TargetView is UIView) continue;
+                    if (tr.TargetView is UIView) continue;
                     if (((ObjectCore)tr.TargetView).LocalParent != null) continue;
                     ((ObjectCore)tr.TargetView).LocalParent = (ObjectCore)content;
                     tr.TargetView.Transform.Update();
                 }
-                if(!transform.AnchoredRect.DotInRect(Undefined.MouseScreenPosition)) continue;
-                var move = new Dot2(Undefined.MouseScroll * component.HorizontalScrollSpeed, Undefined.MouseScroll * component.VerticalScrollSpeed);
+
+                if (!transform.AnchoredRect.DotInRect(Undefined.MouseScreenPosition)) continue;
+                var move = new Dot2(Undefined.MouseScroll * component.HorizontalScrollSpeed,
+                    Undefined.MouseScroll * component.VerticalScrollSpeed);
                 var contentPosition = content.Transform.OriginalRect.Position;
                 var currentRect = content.Transform.OriginalRect;
                 var viewRect = component.ViewRect;
@@ -65,7 +62,7 @@ namespace GameEngine.UI.Systems
                     MathUtils.ClampOut(contentPosition.Y - move.Y, -viewRect.Position.Y,
                         transform.AnchoredRect.Height - (viewRect.Position.Y + viewRect.Height)));
                 content.Transform.OriginalRect = new Rect(pos, currentRect.Width, currentRect.Height);
-                
+
                 /*
                 var component = result.Get1();
                 var view = component.TargetView;
@@ -101,6 +98,7 @@ namespace GameEngine.UI.Systems
                         component.ViewRect.Position.Y));
                 transform.OriginalRect = new Rect(pos, currentRect.Width, currentRect.Height);*/
             }
+
             foreach (var scroll in _changedScrolls)
             {
                 var component = scroll.Get1();

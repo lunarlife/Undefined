@@ -3,13 +3,13 @@ using Utils.Events;
 
 namespace Events.Chat
 {
-    public class ChatMessageReceivedEvent: Event
+    public class ChatMessageReceivedEvent : Event
     {
-        public ChatMessage ChatMessage { get; }
-
         public ChatMessageReceivedEvent(ChatMessage chatMessage)
         {
             ChatMessage = chatMessage;
         }
+
+        public ChatMessage ChatMessage { get; }
     }
 }

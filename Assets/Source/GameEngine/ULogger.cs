@@ -4,10 +4,9 @@ using Logger = Networking.Loggers.Logger;
 
 namespace GameEngine
 {
-
     public class ULogger : Logger
     {
-        private static ULogger _instance;
+        private static readonly ULogger _instance;
 
         static ULogger()
         {
@@ -15,6 +14,7 @@ namespace GameEngine
             _instance.CheckLogFile();
             File.WriteAllText(Path.Combine(Paths.LogsPath, "latest.log"), "");
         }
+
         public static void ShowInfo(string info)
         {
             _instance.Info(info);

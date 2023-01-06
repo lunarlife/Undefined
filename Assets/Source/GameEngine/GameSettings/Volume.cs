@@ -4,7 +4,6 @@ using Utils.Events;
 
 namespace GameEngine.GameSettings
 {
-
     public struct Volume
     {
         private float _music;

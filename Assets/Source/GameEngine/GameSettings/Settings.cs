@@ -8,15 +8,15 @@ using Utils.Events;
 
 namespace GameEngine.GameSettings
 {
-
     public static class Settings
     {
         private static int _chatMaxMessageCount = 50;
         private static float _scrollUiSpeed = 40;
+        private static Resolution _resolutionUnscaled = Resolution;
         public static Resolution MinResolution { get; } = new() { Width = 800, Height = 600 };
         public static Resolution Resolution { get; } = new() { Width = 1920, Height = 1080 };
-        private static Resolution _resolutionUnscaled = Resolution;
         public static Resolution MaxResolution { get; } = new() { Width = 4096, Height = 3072 };
+
         public static Resolution ResolutionUnscaled
         {
             get => _resolutionUnscaled;
@@ -24,7 +24,7 @@ namespace GameEngine.GameSettings
             {
                 if (value.Width < MinResolution.Width || value.Height < MinResolution.Height)
                     throw new SettingsException(
-                        $"{nameof(GameEngine.GameSettings.Resolution)} cant be lower then {MinResolution.Width}x{MinResolution.Height}");
+                        $"{nameof(GameSettings.Resolution)} cant be lower then {MinResolution.Width}x{MinResolution.Height}");
                 _resolutionUnscaled = value;
                 Undefined.CallSynchronously(() => Screen.SetResolution(value.Width, value.Height, value.IsFullScreen));
                 Save();
@@ -48,7 +48,7 @@ namespace GameEngine.GameSettings
         }
 
         public static BindsSettings Binds { get; } = new();
-        
+
 
         public static float ScrollUiSpeed
         {
@@ -69,7 +69,7 @@ namespace GameEngine.GameSettings
                 Resolution = _resolutionUnscaled,
                 Volume = Volume,
                 Binds = Binds,
-                ChatMaxMessageCount = _chatMaxMessageCount,
+                ChatMaxMessageCount = _chatMaxMessageCount
             }));
         }
 

@@ -5,9 +5,9 @@ namespace GameEngine.Components
 {
     public record CanvasComponent : UIUnityComponent
     {
+        private CameraComponent _camera;
         private float _planeDistance;
         private RenderMode _renderMode;
-        private CameraComponent _camera;
         public override Type ComponentType { get; } = typeof(Canvas);
 
         public float PlaneDistance
@@ -29,6 +29,7 @@ namespace GameEngine.Components
                 Update();
             }
         }
+
         public CameraComponent Camera
         {
             get => _camera;
@@ -38,7 +39,7 @@ namespace GameEngine.Components
                 Update();
             }
         }
-        public float ScaleFactor { get; set; }
 
+        public float ScaleFactor { get; set; }
     }
 }

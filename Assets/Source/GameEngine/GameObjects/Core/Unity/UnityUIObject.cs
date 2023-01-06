@@ -1,12 +1,14 @@
+using UnityEngine;
+
 namespace GameEngine.GameObjects.Core.Unity
 {
     public class UnityUIObject : UnityObject
     {
-        public UnityEngine.RectTransform Transform { get; private set; }
+        public RectTransform Transform { get; private set; }
 
         protected override void Awake()
         {
-            Transform = gameObject.AddComponent<UnityEngine.RectTransform>();
+            Transform = gameObject.AddComponent<RectTransform>();
             base.Awake();
         }
 

@@ -6,7 +6,6 @@ namespace GameEngine.Exceptions
     {
         public WindowException(string msg) : base(msg)
         {
-            
         }
     }
 }

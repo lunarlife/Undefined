@@ -6,13 +6,13 @@ namespace GameEngine.Components
 {
     public record CanvasScalerComponent : UIUnityComponent
     {
-        private CanvasScaler.ScaleMode _scaleMode;
-        private Dot2 _referenceResolution;
-        private float _referencePixelsPerUnit;
-        private CanvasScaler.ScreenMatchMode _screenMatchMode;
         private float _matchWidthOrHeight;
+        private float _referencePixelsPerUnit;
+        private Dot2 _referenceResolution;
+        private CanvasScaler.ScaleMode _scaleMode;
+        private CanvasScaler.ScreenMatchMode _screenMatchMode;
         public override Type ComponentType { get; } = typeof(CanvasScaler);
-        
+
         public CanvasScaler.ScaleMode ScaleMode
         {
             get => _scaleMode;

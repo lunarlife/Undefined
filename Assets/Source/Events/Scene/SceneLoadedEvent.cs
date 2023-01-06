@@ -1,13 +1,14 @@
+using GameEngine.Scenes;
+
 namespace Events.Scene
 {
-
     public class SceneLoadedEvent : SceneEvent
     {
-        public SceneLoadedEvent(global::GameEngine.Scenes.OldScene scene)
+        public SceneLoadedEvent(OldScene scene)
         {
             Scene = scene;
         }
 
-        public override global::GameEngine.Scenes.OldScene Scene { get; }
+        public override OldScene Scene { get; }
     }
 }

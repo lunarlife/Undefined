@@ -1,7 +1,7 @@
 using GameEngine.GameObjects.Core;
 using TMPro;
 using UECS;
-using UndefinedNetworking.GameEngine.UI.Components;
+using UndefinedNetworking.GameEngine.Scenes.UI.Components;
 
 namespace GameEngine.UI.Systems
 {
@@ -11,7 +11,6 @@ namespace GameEngine.UI.Systems
 
         public void Init()
         {
-            
         }
 
         public void Update()

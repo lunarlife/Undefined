@@ -2,33 +2,38 @@ using UndefinedNetworking.GameEngine.Input;
 
 namespace GameEngine.GameSettings
 {
-
     public class BindsSettings
     {
         private KeyBind _arrowDown = KeyboardKey.DownArrow;
         private KeyBind _arrowUp = KeyboardKey.UpArrow;
+
+        private KeyBind _cameraBoost = new()
+        {
+            Keys = new[] { KeyboardKey.LeftShift, KeyboardKey.RightShift }
+        };
+
         private KeyBind _cameraDown = KeyboardKey.S;
         private KeyBind _cameraLeft = KeyboardKey.A;
         private KeyBind _cameraRight = KeyboardKey.D;
         private KeyBind _cameraUp = KeyboardKey.W;
-        private KeyBind _cameraBoost = new()
-        {
-            Keys = new [] { KeyboardKey.LeftShift, KeyboardKey.RightShift } 
-        };
         private KeyBind _debug = KeyboardKey.F1;
         private KeyBind _enter = KeyboardKey.Enter;
         private KeyBind _esc = KeyboardKey.Escape;
         private KeyBind _fullScreen = KeyboardKey.F11;
         private KeyBind _inputFieldMultiSelection = KeyboardKey.LeftControl;
-        private KeyBind _tab = KeyboardKey.Tab;
+
         private KeyBind _scrollHorizontal = new()
         {
-            Keys = new [] { KeyboardKey.LeftShift, KeyboardKey.RightShift }
+            Keys = new[] { KeyboardKey.LeftShift, KeyboardKey.RightShift }
         };
+
+        private KeyBind _tab = KeyboardKey.Tab;
+
         private KeyBind _windowInsertRectChange = new()
         {
-            Keys = new [] { KeyboardKey.LeftShift, KeyboardKey.RightShift }
+            Keys = new[] { KeyboardKey.LeftShift, KeyboardKey.RightShift }
         };
+
         public KeyBind CameraUp
         {
             get => _cameraUp;

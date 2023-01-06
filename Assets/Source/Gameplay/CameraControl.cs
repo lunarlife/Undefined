@@ -8,7 +8,7 @@ namespace Gameplay
     public class CameraControl
     {
         private float _speed = 4;
-        
+
         public CameraControl()
         {
             this.RegisterListener();

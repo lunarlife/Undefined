@@ -3,7 +3,6 @@ using Utils.AsyncOperations;
 
 namespace Scenes
 {
-
     public class GameScene : SceneLoader
     {
         public override string SceneName => "Game";
@@ -11,7 +10,6 @@ namespace Scenes
         public override void OnLoading(AsyncOperationInfo<SceneLoadingState> info)
         {
             InitObjects();
-
         }
         /*public World? World;
         private ClientChat _chat;*/

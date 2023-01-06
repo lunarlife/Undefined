@@ -1,5 +1,5 @@
 using UndefinedNetworking.GameEngine.Input;
-using Event = Utils.Events.Event;
+using Utils.Events;
 
 namespace Events.GameEngine.Keyboard
 {

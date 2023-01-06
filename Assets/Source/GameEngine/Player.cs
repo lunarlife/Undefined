@@ -11,10 +11,11 @@ namespace GameEngine
         public IScene ActiveScene { get; private set; }
         public string Nickname { get; }
         public string SenderName { get; }
+
         public void SendMessage(ChatMessage message)
         {
-            
         }
+
         public void LoadScene(SceneType type)
         {
             ActiveScene = new Scene(this);

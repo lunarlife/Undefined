@@ -5,11 +5,12 @@ namespace GameEngine.Components
 {
     public record CameraComponent : UIUnityComponent
     {
+        private float _farClipPlane;
+        private float _nearClipPlane;
         private bool _orthographic;
         private float _orthographicSize;
-        private float _nearClipPlane;
-        private float _farClipPlane;
         public override Type ComponentType { get; } = typeof(Camera);
+
         public bool Orthographic
         {
             get => _orthographic;

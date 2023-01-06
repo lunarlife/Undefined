@@ -6,7 +6,6 @@ namespace GameEngine.Exceptions
     {
         public MarginsException(string msg) : base(msg)
         {
-            
         }
     }
 }

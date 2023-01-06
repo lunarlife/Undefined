@@ -1,6 +1,6 @@
 namespace GameEngine.UI.Windows
 {
-    public abstract class Window 
+    public abstract class Window
     {
         /*private static List<UIView> _floatingWindows = new();
         private static UIView _targetWindow;

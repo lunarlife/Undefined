@@ -1,8 +1,10 @@
+using UnityEngine;
+
 namespace GameEngine.GameObjects.Core.Unity
 {
     public class UnityGameObject : UnityObject
     {
-        public UnityEngine.Transform Transform { get; private set; }
+        public Transform Transform { get; private set; }
 
         protected override void Awake()
         {

@@ -5,21 +5,21 @@ using Utils.Events;
 
 namespace GameEngine.Scenes
 {
-
     public sealed class OldScene : IEventCaller
     {
+        private readonly object _asyncLock = new();
         private readonly SceneLoader _loader;
         private readonly object _syncLock = new();
-        private readonly object _asyncLock = new();
-        public static OldScene CurrentScene { get; private set; }
-
-        public string SceneName { get; }
 
         private OldScene(SceneLoader loader)
         {
             _loader = loader;
             SceneName = loader.SceneName;
         }
+
+        public static OldScene CurrentScene { get; private set; }
+
+        public string SceneName { get; }
 
         private async void Load(AsyncOperationInfo<SceneLoadingState> info)
         {
@@ -47,7 +47,7 @@ namespace GameEngine.Scenes
             this.UnregisterEventsSafity();
             //this.CallEvent(new SceneUnloadEvent(this));
         }
-        
+
         public static (T loader, AsyncOperationInfo<SceneLoadingState> info) LoadScene<T>() where T : SceneLoader, new()
         {
             var loader = new T();

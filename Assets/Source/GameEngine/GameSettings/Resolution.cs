@@ -2,7 +2,6 @@ using Utils;
 
 namespace GameEngine.GameSettings
 {
-
     public struct Resolution
     {
         public int Width { get; set; }
@@ -14,6 +13,9 @@ namespace GameEngine.GameSettings
             return $"{Width}x{Height}";
         }
 
-        public static implicit operator Rect(Resolution res) => new(0,0, res.Width, res.Height);
+        public static implicit operator Rect(Resolution res)
+        {
+            return new(0, 0, res.Width, res.Height);
+        }
     }
 }

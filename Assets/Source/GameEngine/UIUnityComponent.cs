@@ -1,11 +1,12 @@
 using System;
-using UndefinedNetworking.GameEngine.UI.Components;
+using UndefinedNetworking.GameEngine.Scenes.UI.Components;
+using UnityEngine;
 
 namespace GameEngine
 {
     public abstract record UIUnityComponent : UIComponent
     {
         public abstract Type ComponentType { get; }
-        public UnityEngine.Component Component { get; private set; }
+        public Component Component { get; private set; }
     }
 }

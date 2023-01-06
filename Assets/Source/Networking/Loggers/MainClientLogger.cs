@@ -1,4 +1,4 @@
-using Debug = UnityEngine.Debug;
+using UnityEngine;
 
 namespace Networking.Loggers
 {

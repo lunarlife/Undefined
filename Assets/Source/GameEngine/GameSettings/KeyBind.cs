@@ -7,13 +7,22 @@ namespace GameEngine.GameSettings
         public KeyboardKey[] Keys { get; set; }
         public ClickState Type { get; set; }
 
-        public static implicit operator KeyBind(KeyboardKey code) => new()
+        public static implicit operator KeyBind(KeyboardKey code)
         {
-            Keys = new[] { code },
-        };
+            return new()
+            {
+                Keys = new[] { code }
+            };
+        }
 
-        public static implicit operator KeyboardKey[](KeyBind bind) => bind.Keys;
+        public static implicit operator KeyboardKey[](KeyBind bind)
+        {
+            return bind.Keys;
+        }
 
-        public bool IsPressed(ClickState state = ClickState.All) => Type == ClickState.All ? Undefined.IsPressed(Keys, state) : Undefined.IsPressedAny(Keys, state);
+        public bool IsPressed(ClickState state = ClickState.All)
+        {
+            return Type == ClickState.All ? Undefined.IsPressed(Keys, state) : Undefined.IsPressedAny(Keys, state);
+        }
     }
 }
