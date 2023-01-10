@@ -6,18 +6,21 @@ using System.Threading.Tasks;
 using Events.GameEngine;
 using Events.GameEngine.Keyboard;
 using Events.Tick;
-using GameEngine.Components;
+using GameEngine.GameObjects.Core;
+using UndefinedNetworking.Converters;
 using UndefinedNetworking.Events.GameEngine;
 using UndefinedNetworking.GameEngine;
 using UndefinedNetworking.GameEngine.Input;
 using UnityEngine;
 using Utils.Dots;
 using Utils.Events;
+using Canvas = GameEngine.Components.Canvas;
+using Component = UndefinedNetworking.GameEngine.Components.Component;
 using Rect = Utils.Rect;
 
 namespace GameEngine
 {
-    public class EngineEventsInvoker : MonoBehaviour, IEventCaller<EngineStopEvent>
+    public class EngineEventsInvoker : MonoBehaviour
     {
         private static readonly Thread FixedTickThread = new(AsyncFixedTick) { Name = "AsyncFixedTickThread" };
         private static readonly Thread TickThread = new(AsyncTick) { Name = "AsyncTickThread" };
@@ -25,7 +28,7 @@ namespace GameEngine
         private static bool _isAsyncFixedTickWorking;
         private static bool _isOneSecondTickWorking;
         private static bool _isAsyncTickWorking;
-        private static SyncTickEvent? _event;
+        private static SyncTickEventData? _event;
 
         private static readonly Queue<ActionCallback> SyncActions = new();
 
@@ -84,9 +87,18 @@ namespace GameEngine
             }
         }
 
+        public static Event<KeyboardWriteEvent> OnKeyboardWriting { get; } = new();
+        public static Event<EngineStopEvent> OnEngineStop { get; } = new();
+        public static Event<SyncTickEventData> OnSyncTick { get; } = new();
+        public static Event<TickEventData> OnTick { get; } = new();
+        public static Event<AsyncFixedTickEventData> OnFixedAsyncTick { get; } = new();
+        public static Event<OneSecondTickEventData> OnOneSecondTick { get; } = new();
+        public static Event<KeyboardKeyDownEvent> OnKeyboardKeyDown { get; } = new();
+        public static Event<KeyboardKeyUpEvent> OnKeyboardKeyUp { get; } = new();
+        public static Event<KeyboardKeyPressEvent> OnKeyboardKeyPress { get; } = new();
+
         private void Awake()
         {
-            LoadAssemblies();
             DontDestroyOnLoad(gameObject);
             IsAsyncTickWorking = true;
             IsAsyncFixedTickWorking = true;
@@ -96,10 +108,32 @@ namespace GameEngine
 
         private async void Update()
         {
-            if (Undefined.Canvas?.GetComponent<CanvasComponent>() is { Component: { } } canvas &&
+            if (Undefined.Canvas is not null && Undefined.Camera is not null)
+            {
+                Undefined.Canvas.GetComponent<Canvas>().Read(canvas =>
+                {
+                    if (((ObjectCore)canvas.TargetView).GetUnityComponent<UnityEngine.Canvas>() is not { } uCanvas) return;
+                    if (!UIScale.Equals(uCanvas.scaleFactor))
+                    {
+                        UIScale = uCanvas.scaleFactor;
+                        var sizeDelta = uCanvas.GetComponent<RectTransform>().sizeDelta;
+                        Undefined.Canvas.Transform.Modify(transform =>
+                        {
+                            transform.OriginalRect = new Rect(0, 0, (int)sizeDelta.x, (int)sizeDelta.y);
+                        });
+                    }
+                    var mousePosition = Input.mousePosition;
+                    MouseScroll = Input.mouseScrollDelta.normalized.y;
+                    MouseDeltaUnscaled = new Dot2(mousePosition.x - MouseScreenPositionUnscaled.X,
+                        mousePosition.y - MouseScreenPositionUnscaled.Y);
+                    MouseScreenPositionUnscaled = new Dot2(mousePosition.x, mousePosition.y);
+                    MouseScreenPosition = MouseScreenPositionUnscaled / UIScale;
+                });
+            }
+            /*if (Undefined.Canvas?.GetComponent<Canvas>() is { Component: { } } vc &&
                 Undefined.Camera is not null)
             {
-                var canvasComponent = (Canvas)canvas.Component;
+                var canvasComponent = (UnityEngine.Canvas)vc.Component;
                 if (!UIScale.Equals(canvasComponent.scaleFactor))
                 {
                     UIScale = canvasComponent.scaleFactor;
@@ -114,7 +148,7 @@ namespace GameEngine
                 MouseScreenPositionUnscaled = new Dot2(mousePosition.x, mousePosition.y);
                 MouseScreenPosition = MouseScreenPositionUnscaled / UIScale;
                 //MouseWorldPosition = Undefined.Camera.CameraToWorldPositionSynchronously(MouseScreenPosition);
-            }
+            }*/
 
             lock (SyncLock)
             {
@@ -182,11 +216,11 @@ namespace GameEngine
             if (!string.IsNullOrEmpty(Input.inputString))
             {
                 var input = Input.inputString;
-                await Task.Run(() => { EventManager.CallEvent(new KeyboardWriteEvent(input)); });
+                await Task.Run(() => { OnKeyboardWriting.Invoke(new KeyboardWriteEvent(input)); });
             }
 
-            var tickEvent = new SyncTickEvent(Time.unscaledDeltaTime);
-            EventManager.CallEvent(tickEvent);
+            var tickEvent = new SyncTickEventData(Time.unscaledDeltaTime);
+            OnSyncTick.Invoke(tickEvent);
             _event = tickEvent;
         }
 
@@ -199,17 +233,8 @@ namespace GameEngine
 
         private void OnApplicationQuit()
         {
-            this.CallEvent(new EngineStopEvent());
+            OnEngineStop.Invoke(new EngineStopEvent());
         }
-
-        private static void LoadAssemblies()
-        {
-            AppDomain.CurrentDomain.Load("Utils");
-            AppDomain.CurrentDomain.Load("UECS");
-            AppDomain.CurrentDomain.Load("Networking");
-            AppDomain.CurrentDomain.Load("UndefinedNetworking");
-        }
-
         public static bool IsPressedAll(ClickState states, KeyboardKey[] codes)
         {
             lock (KeyLock)
@@ -289,7 +314,7 @@ namespace GameEngine
                 var delta = delay - remainMs < 1 ? 1 : delay - remainMs;
                 Thread.Sleep(delta);
                 var now = DateTime.Now;
-                EventManager.CallEvent(new AsyncFixedTickEvent(1f / Undefined.FixedTicksPerSecond));
+                OnFixedAsyncTick.Invoke(new AsyncFixedTickEventData(1f / Undefined.FixedTicksPerSecond));
                 remainMs = (int)(DateTime.Now - now).TotalMilliseconds;
             }
         }
@@ -303,7 +328,7 @@ namespace GameEngine
                 var delta = delay - remainMs < 1 ? 1 : delay - remainMs;
                 Thread.Sleep(delta);
                 var now = DateTime.Now;
-                EventManager.CallEvent(new OneSecondTickEvent());
+                OnOneSecondTick.Invoke(new OneSecondTickEventData());
                 remainMs = (int)(DateTime.Now - now).TotalMilliseconds;
             }
         }
@@ -327,10 +352,10 @@ namespace GameEngine
                     KeyboardUpKeys.CopyTo(up);
                 }
 
-                foreach (var key in pressed) EventManager.CallEvent(new KeyboardKeyPressEvent(key));
-                foreach (var key in down) EventManager.CallEvent(new KeyboardKeyDownEvent(key));
-                foreach (var key in up) EventManager.CallEvent(new KeyboardKeyUpEvent(key));
-                EventManager.CallEvent(new TickEvent(_event.DeltaTime));
+                foreach (var key in pressed) OnKeyboardKeyPress.Invoke(new KeyboardKeyPressEvent(key));
+                foreach (var key in down) OnKeyboardKeyDown.Invoke(new KeyboardKeyDownEvent(key));
+                foreach (var key in up) OnKeyboardKeyUp.Invoke(new KeyboardKeyUpEvent(key));
+                OnTick.Invoke(new TickEventData(_event.DeltaTime));
                 _event = null;
             }
         }

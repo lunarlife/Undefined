@@ -16,7 +16,7 @@ namespace GameEngine.GameSettings
         public static Resolution MinResolution { get; } = new() { Width = 800, Height = 600 };
         public static Resolution Resolution { get; } = new() { Width = 1920, Height = 1080 };
         public static Resolution MaxResolution { get; } = new() { Width = 4096, Height = 3072 };
-
+        public static Event<ResolutionChangedEvent> OnResolutionChanged { get; } = new();
         public static Resolution ResolutionUnscaled
         {
             get => _resolutionUnscaled;
@@ -28,24 +28,11 @@ namespace GameEngine.GameSettings
                 _resolutionUnscaled = value;
                 Undefined.CallSynchronously(() => Screen.SetResolution(value.Width, value.Height, value.IsFullScreen));
                 Save();
-                EventManager.CallEvent(new ResolutionChangedEvent());
+                OnResolutionChanged.Invoke(new ResolutionChangedEvent());
             }
         }
 
         public static Volume Volume { get; }
-
-        public static int ChatMaxMessageCount
-        {
-            get => _chatMaxMessageCount;
-            set
-            {
-                _chatMaxMessageCount = MathUtils.Clamp(value, 10, 200)
-                    ? value
-                    : throw new SettingsException("Message count out of range");
-                Save();
-                EventManager.CallEvent(new ChatMessageCountChangeEvent());
-            }
-        }
 
         public static BindsSettings Binds { get; } = new();
 
@@ -69,7 +56,6 @@ namespace GameEngine.GameSettings
                 Resolution = _resolutionUnscaled,
                 Volume = Volume,
                 Binds = Binds,
-                ChatMaxMessageCount = _chatMaxMessageCount
             }));
         }
 
@@ -78,7 +64,6 @@ namespace GameEngine.GameSettings
             public Resolution Resolution;
             public Volume Volume;
             public BindsSettings Binds;
-            public int ChatMaxMessageCount;
         }
     }
 

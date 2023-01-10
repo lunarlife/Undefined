@@ -1,5 +1,6 @@
 using GameEngine.GameObjects.Core;
 using UECS;
+using UndefinedNetworking.GameEngine.Components;
 using UndefinedNetworking.GameEngine.Scenes.UI.Components;
 using UnityEngine;
 using UnityEngine.UI;
@@ -10,7 +11,7 @@ namespace GameEngine.UI.Systems
 {
     public class ImageSystem : ISyncSystem
     {
-        [ChangeHandler] private Filter<ImageComponent> _filter;
+        [ChangeHandler] private Filter<IComponent<ImageComponent>> _filter;
 
         public void Init()
         {
@@ -20,19 +21,22 @@ namespace GameEngine.UI.Systems
         {
             foreach (var result in _filter)
             {
-                var component = result.Get1();
-                var image = ((ObjectCore)component.TargetView).GetOrAddUnityComponent<Image>();
-                // ReSharper disable once AssignNullToNotNullAttribute
-                image.sprite = (component.Sprite as Sprite)?.UnitySprite;
-                if (component.Shader is { } sh)
+                result.Get1().Read(component =>
                 {
-                    var shader = ((Shader)sh).UnityShader;
-                    image.material = image.material.shader.name == shader.name ? image.material : new Material(shader);
-                }
-                if (component.FilledSettings is not { } filledSettings) continue;
-                image.fillAmount = filledSettings.FillAmount;
-                image.fillMethod = filledSettings.FillMethod.ToUnityFillMethod();
-                image.fillOrigin = (int)filledSettings.FillOrigin;
+                    var image = ((ObjectCore)component.TargetView).GetOrAddUnityComponent<Image>();
+                    // ReSharper disable once AssignNullToNotNullAttribute
+                    image.sprite = (component.Sprite as Sprite)?.UnitySprite;
+                    if (component.Shader is { } sh)
+                    {
+                        var shader = ((Shader)sh).UnityShader;
+                        image.material = image.material.shader.name == shader.name ? image.material : new Material(shader);
+                    }
+                    if (component.FilledSettings is not { } filledSettings) return;
+                    image.fillAmount = filledSettings.FillAmount;
+                    image.fillMethod = filledSettings.FillMethod.ToUnityFillMethod();
+                    image.fillOrigin = (int)filledSettings.FillOrigin;
+                });
+                
             }
         }
     }

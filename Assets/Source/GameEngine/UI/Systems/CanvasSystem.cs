@@ -1,14 +1,17 @@
 using GameEngine.Components;
+using GameEngine.GameObjects.Core;
 using UECS;
+using UndefinedNetworking.GameEngine.Components;
 using UnityEngine;
 using UnityEngine.UI;
+using Canvas = GameEngine.Components.Canvas;
 
 namespace GameEngine.UI.Systems
 {
     public class CanvasSystem : ISyncSystem
     {
-        [ChangeHandler] private Filter<CanvasComponent> _canvasFilter;
-        [ChangeHandler] private Filter<CanvasScalerComponent> _canvasScalerFilter;
+        [ChangeHandler] private Filter<IComponent<Canvas>> _canvasFilter;
+        [ChangeHandler] private Filter<IComponent<CanvasScalerComponent>> _canvasScalerFilter;
 
         public void Init()
         {
@@ -18,22 +21,29 @@ namespace GameEngine.UI.Systems
         {
             foreach (var result in _canvasScalerFilter)
             {
-                var component = result.Get1();
-                if ((CanvasScaler)component.Component is not { } scaler) continue;
-                scaler.uiScaleMode = component.ScaleMode;
-                scaler.referenceResolution = component.ReferenceResolution.ToUnityVector();
-                scaler.matchWidthOrHeight = component.MatchWidthOrHeight;
-                scaler.referencePixelsPerUnit = component.ReferencePixelsPerUnit;
-                scaler.screenMatchMode = component.ScreenMatchMode;
+                result.Get1().Read(component =>
+                {
+                    var scaler = ((ObjectCore)component.TargetView).GetOrAddUnityComponent<CanvasScaler>();
+                    scaler.uiScaleMode = component.ScaleMode;
+                    scaler.referenceResolution = component.ReferenceResolution.ToUnityVector();
+                    scaler.matchWidthOrHeight = component.MatchWidthOrHeight;
+                    scaler.referencePixelsPerUnit = component.ReferencePixelsPerUnit;
+                    scaler.screenMatchMode = component.ScreenMatchMode;
+                });
             }
 
             foreach (var result in _canvasFilter)
             {
-                var component = result.Get1();
-                if ((Canvas)component.Component is not { } canvas) continue;
-                canvas.worldCamera = (Camera)component.Camera.Component;
-                canvas.planeDistance = component.PlaneDistance;
-                canvas.renderMode = component.RenderMode;
+                result.Get1().Read(component =>
+                {
+                    var canvas = ((ObjectCore)component.TargetView).GetOrAddUnityComponent<UnityEngine.Canvas>();
+                    component.Camera.Read(cameraRead =>
+                    {
+                        canvas.worldCamera = ((ObjectCore)cameraRead.TargetView).GetOrAddUnityComponent<Camera>();
+                    });
+                    canvas.planeDistance = component.PlaneDistance;
+                    canvas.renderMode = component.RenderMode;
+                });
             }
         }
     }

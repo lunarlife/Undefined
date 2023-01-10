@@ -1,4 +1,3 @@
-using Events.Networking.NetPlayerEvents;
 using Networking;
 using UndefinedNetworking;
 

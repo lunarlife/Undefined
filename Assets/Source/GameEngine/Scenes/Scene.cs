@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Linq;
 using GameEngine.Exceptions;
 using GameEngine.GameObjects.Core;
-using Networking;
 using UndefinedNetworking.Events.ObjectEvents;
 using UndefinedNetworking.Events.SceneEvents;
 using UndefinedNetworking.Events.UIEvents;
@@ -19,11 +18,12 @@ namespace GameEngine.Scenes
     {
         private readonly Dictionary<uint, IObjectBase> _objects = new();
 
+        public Event<SceneUnloadEventData> SceneUnload { get; } = new();
+        public Event<UIOpenEventData> UIOpen { get; } = new();
         public Scene(ISceneViewer viewer)
         {
             Viewer = viewer;
             Type = SceneType.XYZ;
-            EventManager.CallEvent(new SceneLoadEvent(this));
         }
 
         public ISceneViewer Viewer { get; }
@@ -32,29 +32,28 @@ namespace GameEngine.Scenes
 
         public void Unload()
         {
-            EventManager.CallEvent(new SceneUnloadEvent(this));
+            SceneUnload.Invoke(new SceneUnloadEventData(this));
         }
 
         public IUIView OpenView(ViewParameters parameters)
         {
             var view = new UIView(Viewer, parameters);
             _objects.Add(view.Identifier, view);
-            EventManager.CallEvent(new UIOpenEvent(view));
+            view.OnClose.AddListener(OnCloseView);
+            UIOpen.Invoke(new UIOpenEventData(view));
             return view;
         }
 
-        public void CloseView(IUIView view)
+        private void OnCloseView(UICloseEventData data)
         {
-            if (!Objects.Contains(view)) throw new ObjectException("unknown object");
-            _objects.Remove(view.Identifier);
-            EventManager.CallEvent(new UICloseEvent(view));
+            if (!Objects.Contains(data.View)) throw new ObjectException("unknown object");
+            _objects.Remove(data.View.Identifier);
         }
 
         public void DestroyObject(IGameObject obj)
         {
             if (!Objects.Contains(obj)) throw new ObjectException("unknown object");
             _objects.Remove(obj.Identifier);
-            EventManager.CallEvent(new ObjectDestroyEvent(obj));
         }
 
         public IUIView GetView(uint identifier)
@@ -78,11 +77,12 @@ namespace GameEngine.Scenes
             return true;
         }
 
+
         public IUIView OpenNetworkView(uint identifier)
         {
             var view = new NetworkUIView(Viewer, identifier);
             _objects.Add(view.Identifier, view);
-            EventManager.CallEvent(new UIOpenEvent(view));
+            UIOpen.Invoke(new UIOpenEventData(view));
             return view;
         }
     }

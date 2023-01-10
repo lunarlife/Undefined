@@ -12,7 +12,6 @@ namespace GameEngine.GameObjects.Core.Unity
         public ObjectCore Object { get; set; }
 
         public bool IsDestroyed { get; set; }
-
         protected virtual void Awake()
         {
             if (PoolObjectsParent is null)
@@ -28,7 +27,7 @@ namespace GameEngine.GameObjects.Core.Unity
         {
             if (!IsDestroyed || Object is null) return;
             IsDestroyed = false;
-            await Task.Run(() => EventManager.CallEvent(new ObjectInstanceEvent(Object)));
+            //await Task.Run(() => EventManager.CallEvent(new ObjectInstanceEvent(Object)));
         }
 
         protected virtual async void OnDisable()

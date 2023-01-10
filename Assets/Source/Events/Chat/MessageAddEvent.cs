@@ -3,7 +3,7 @@ using Utils.Events;
 
 namespace Events.Chat
 {
-    public class MessageAddEvent : Event
+    public class MessageAddEvent : EventData
     {
         public MessageAddEvent(ChatMessage chatMessage)
         {

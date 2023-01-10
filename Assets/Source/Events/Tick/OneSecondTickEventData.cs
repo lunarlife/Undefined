@@ -2,7 +2,7 @@
 
 namespace Events.Tick
 {
-    public class OneSecondTickEvent : Event
+    public class OneSecondTickEventData : EventData
     {
     }
 }

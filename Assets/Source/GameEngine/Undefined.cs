@@ -6,6 +6,7 @@ using System.Net;
 using System.Threading.Tasks;
 using Debugger;
 using Events.GameEngine;
+using Events.GameEngine.Keyboard;
 using Events.Networking.PlayerEvents;
 using Events.Tick;
 using GameEngine.Components;
@@ -21,8 +22,9 @@ using Networking.Loggers;
 using Networking.Packets;
 using UECS;
 using UndefinedNetworking;
+using UndefinedNetworking.Converters;
 using UndefinedNetworking.Events.GameEngine;
-using UndefinedNetworking.GameEngine;
+using UndefinedNetworking.GameEngine.Components;
 using UndefinedNetworking.GameEngine.Input;
 using UndefinedNetworking.GameEngine.Scenes;
 using UndefinedNetworking.GameEngine.Scenes.UI;
@@ -38,6 +40,7 @@ using Utils;
 using Utils.Dots;
 using Utils.Enums;
 using Utils.Events;
+using Canvas = GameEngine.Components.Canvas;
 using Logger = Networking.Loggers.Logger;
 
 namespace GameEngine
@@ -58,11 +61,13 @@ namespace GameEngine
         public static bool IsConnected { get; private set; }
 
         public static Logger Logger { get; } = new MainClientLogger();
+        public static Event<KeyboardWriteEvent> OnKeyboardWriting => EngineEventsInvoker.OnKeyboardWriting;
+        public static Event<PlayerConnectedEvent> OnPlayerConnected { get; } = new();
+        public static Event<PlayerDisconnectEvent> OnPlayerDisconnect { get; } = new();
 
         public static bool IsSynchronously => Environment.CurrentManagedThreadId == _mainThreadId;
         public static bool IsStarted { get; private set; }
         public static IUIView Canvas { get; private set; }
-        public static OldScene CurrentScene => OldScene.CurrentScene;
         public static IUIView Camera { get; private set; }
         public static Dot2Int MouseScreenPositionUnscaled => EngineEventsInvoker.MouseScreenPositionUnscaled;
         public static Dot2Int MouseScreenPosition => EngineEventsInvoker.MouseScreenPosition;
@@ -80,7 +85,6 @@ namespace GameEngine
         public static void Startup()
         {
             IsStarted = IsStarted ? throw new EngineException("engine is started") : true;
-            ServerManager = new ServerManager();
             _mainThreadId = Environment.CurrentManagedThreadId;
             var args = Environment.GetCommandLineArgs();
             if (args.Contains("-window"))
@@ -94,8 +98,12 @@ namespace GameEngine
             }
             else
             {
+                AppDomain.CurrentDomain.Load("Utils");
+                AppDomain.CurrentDomain.Load("UECS");
+                AppDomain.CurrentDomain.Load("Networking");
+                AppDomain.CurrentDomain.Load("UndefinedNetworking");
+                ServerManager = new ServerManager(Logger);
                 ServerManager.InternalResourcesManager.LoadAll();
-                NetworkData.LoadNetworkData();
                 EventManager.RegisterStaticEvents(typeof(Undefined));
                 ObjectCore.CreateGameObjectsPoolInstances(50);
                 ObjectCore.CreateUIPoolInstances(500);
@@ -106,19 +114,24 @@ namespace GameEngine
                     {
                         Player.LoadScene(SceneType.XY);
                         Camera = Player.ActiveScene.OpenView(new ViewParameters());
-                        var camera = Camera.AddComponent<CameraComponent>();
-                        camera.Orthographic = true;
-                        camera.OrthographicSize = 10;
-                        camera.FarClipPlane = 40;
-                        camera.NearClipPlane = .3f;
+                        var cameraComponent = Camera.AddComponent<CameraComponent>();
+                        cameraComponent.Modify(camera =>
+                        {
+                            camera.Orthographic = true;
+                            camera.OrthographicSize = 10;
+                            camera.FarClipPlane = 40;
+                            camera.NearClipPlane = .3f;
+                        });
                         Canvas = Player.ActiveScene.OpenView(new ViewParameters
                         {
                             OriginalRect = Settings.ResolutionUnscaled
                         });
-                        var canvas = Canvas.AddComponent<CanvasComponent>();
-                        canvas.PlaneDistance = 10;
-                        canvas.Camera = camera;
-                        canvas.RenderMode = RenderMode.ScreenSpaceCamera;
+                        Canvas.AddComponent<Canvas>().Modify(canvas =>
+                        {
+                            canvas.PlaneDistance = 10;
+                            canvas.Camera = cameraComponent;
+                            canvas.RenderMode = RenderMode.ScreenSpaceCamera;
+                        });
                         Canvas.AddComponents<CanvasScalerComponent, GraphicRaycasterComponent>();
                         LoadMenuScene();
                     }));
@@ -147,15 +160,13 @@ namespace GameEngine
             Systems.Register(new CanvasSystem());
             Systems.Register(new TextSystem());
             Systems.Register(new MouseHandlersSystem());
-            Systems.Register(new WindowFloatingSystem());
             Systems.Register(new RectTransformSystem());
             Systems.Register(new ScrollSystem());
             Systems.Register(new RectMaskSystem());
             Systems.Register(new ImageSystem());
             Systems.Register(new InputFieldSystem());
-            var netSystem = new NetComponentSystem();
-            DataConverter.AddDynamicConverter(netSystem);
-            Systems.Register(netSystem);
+            Systems.Register(new NetComponentSystem());
+            Systems.Register(new RaycastSystem());
         }
 
         public static async Task<ConnectionResult> Connect(IPAddress address, int port, string nickname)
@@ -184,7 +195,7 @@ namespace GameEngine
                 };
                 RuntimePacketer.IsSenderWorking = true;
                 RuntimePacketer.IsThreadPoolWorking = true;
-                _packeter.Receive += PacketerOnReceive;
+                _packeter.OnReceive.AddListener(data => PacketerOnReceive(data.Packet));
                 _packeter.UnhandledException +=
                     exception => Logger.Error(exception.Message + "\n" + exception.StackTrace);
                 _packeter.SendPacket(new ClientInfoPacket(null, ServerManager.ServerVersion, nickname));
@@ -220,7 +231,7 @@ namespace GameEngine
                     MyPlayer = new NetPlayer(sip.Identifier, _nickname);
                     VisiblePlayers.Add(MyPlayer.Identifier, MyPlayer);
                     //_isConnected = true;
-                    EventManager.CallEvent(new PlayerConnectedEvent(MyPlayer));
+                    OnPlayerConnected.Invoke(new PlayerConnectedEvent(MyPlayer));
                     var chatTypes = new Enum<ChatType>();
                     //var commands = new Enum<ClientCommand>();
                     /*if(sip.Chats is not null)
@@ -243,7 +254,7 @@ namespace GameEngine
                     }
 
                     var p = VisiblePlayers[pdp.Identifier];
-                    EventManager.CallEvent(new PlayerDisconnectEvent(p, pdp.Cause, pdp.Message));
+                    OnPlayerDisconnect.Invoke(new PlayerDisconnectEvent(p, pdp.Cause, pdp.Message));
                     Logger.Info($"{p.Nickname} disconnected");
                     VisiblePlayers.Remove(pdp.Identifier);
                     MyPlayer = null;
@@ -252,7 +263,7 @@ namespace GameEngine
                     var player = new NetPlayer(pcp.Identitifer, pcp.Nickname);
                     VisiblePlayers.Add(pcp.Identitifer, player);
                     Logger.Info($"{player.Nickname} connected");
-                    EventManager.CallEvent(new PlayerConnectedEvent(player));
+                    OnPlayerConnected.Invoke( new PlayerConnectedEvent(player));
                     break;
                 case WorldPacket wp:
                     //CallSynchronously(() => World.LoadWorld(wp));
@@ -276,8 +287,7 @@ namespace GameEngine
                         DisconnectServer(DisconnectCause.InvalidPacket, "");
                         break;
                     }
-
-                    Player.ActiveScene.CloseView(view);
+                    view.Close();
                     break;
                 case UIComponentUpdatePacket updatePacket:
                     break;
@@ -316,13 +326,13 @@ namespace GameEngine
         }
 
         [EventHandler]
-        private static void OnAsyncTickEvent(TickEvent e)
+        private static void OnAsyncTickEvent(TickEventData e)
         {
             Systems.UpdateAsync();
         }
 
         [EventHandler]
-        private static void OnTickEvent(SyncTickEvent e)
+        private static void OnTickEvent(SyncTickEventData e)
         {
             Systems.UpdateSync();
         }
@@ -378,5 +388,7 @@ namespace GameEngine
         {
             return EngineEventsInvoker.IsPressedAny(states, keys);
         }
+
+        public static bool RaycastUIFirst(Dot2Int pos, out IUIView o) => RaycastSystem.RaycastUIFirst(pos, out o);
     }
 }

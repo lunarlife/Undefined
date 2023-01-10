@@ -2,7 +2,7 @@ using Utils.Events;
 
 namespace Events.GameEngine.Keyboard
 {
-    public class KeyboardWriteEvent : Event
+    public class KeyboardWriteEvent : EventData
     {
         public KeyboardWriteEvent(string input)
         {

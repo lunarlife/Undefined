@@ -2,9 +2,9 @@ using Utils.Events;
 
 namespace Events.Tick
 {
-    public class AsyncFixedTickEvent : Event
+    public class AsyncFixedTickEventData : EventData
     {
-        public AsyncFixedTickEvent(float delta)
+        public AsyncFixedTickEventData(float delta)
         {
             DeltaTime = delta;
         }

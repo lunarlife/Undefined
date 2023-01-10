@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using GameEngine.GameObjects.Core;
 using UECS;
 using UndefinedNetworking.Events.Mouse;
+using UndefinedNetworking.GameEngine.Components;
 using UndefinedNetworking.GameEngine.Input;
 using UndefinedNetworking.GameEngine.Scenes.UI.Components.Mouse;
 using UndefinedNetworking.Packets.Components;
@@ -11,14 +12,14 @@ namespace GameEngine.UI.Systems
 {
     public class MouseHandlersSystem : ISyncSystem
     {
-        [AutoInject] private Filter<MouseDownHandlerComponent> _downHandlers;
+        [AutoInject] private Filter<IComponent<MouseDownHandler>> _downHandlers;
 
-        private readonly HashSet<MouseEnterHandlerComponent> _enteredComponents = new();
-        [AutoInject] private Filter<MouseEnterHandlerComponent> _enterHandlers;
-        private readonly HashSet<MouseExitHandlerComponent> _exitedComponents = new();
-        [AutoInject] private Filter<MouseExitHandlerComponent> _exitHandlers;
-        [AutoInject] private Filter<MouseHoldingHandlerComponent> _holdingHandlers;
-        [AutoInject] private Filter<MouseUpHandlerComponent> _upHandlers;
+        private readonly HashSet<IComponent<MouseEnterHandler>> _enteredComponents = new();
+        private readonly HashSet<IComponent<MouseExitHandler>> _exitedComponents = new();
+        [AutoInject] private Filter<IComponent<MouseEnterHandler>> _enterHandlers;
+        [AutoInject] private Filter<IComponent<MouseExitHandler>> _exitHandlers;
+        [AutoInject] private Filter<IComponent<MouseHoldingHandler>> _holdingHandlers;
+        [AutoInject] private Filter<IComponent<MouseUpHandler>> _upHandlers;
 
 
         public void Init()
@@ -29,75 +30,97 @@ namespace GameEngine.UI.Systems
         {
             foreach (var result in _holdingHandlers)
             {
-                var component = result.Get1();
-                var pHolding = component.IsHolding;
-                var holding = component.TargetView.Transform.AnchoredRect.DotInRect(Undefined.MouseScreenPosition) &&
-                              Undefined.IsPressed(component.Keys);
-                component.IsHolding = holding;
-                if (!holding)
+                var res = result.Get1();
+                res.Read(component =>
                 {
-                    if (pHolding && component.TargetView is NetworkUIView)
-                        Undefined.SendPackets(new UIComponentUpdatePacket(component));
-                    continue;
-                }
+                    var holding = false;
+                    component.TargetView.Transform.Read(transform => holding = transform.AnchoredRect.DotInRect(Undefined.MouseScreenPosition) &&
+                                                                               Undefined.IsPressed(component.Keys));
+                    var pHolding = component.IsHolding;
+                    component.IsHolding = holding;
+                    if (!holding)
+                    {
+                        if (pHolding && component.TargetView is NetworkUIView)
+                            Undefined.SendPackets(new UIComponentUpdatePacket(res));
+                        return;
+                    }
 
-                component.CallEvent(new UIMouseHoldingEvent(component.TargetView));
-                if (pHolding || component.TargetView is not NetworkUIView) continue;
-                Undefined.SendPackets(new UIComponentUpdatePacket(component));
+                    component.Event.Invoke(new MouseHoldingEventData(component.TargetView));
+                    if (pHolding || component.TargetView is not NetworkUIView) return;
+                    Undefined.SendPackets(new UIComponentUpdatePacket(res));
+                });
+               
             }
 
             foreach (var result in _upHandlers)
             {
-                var component = result.Get1();
-                if (!Undefined.IsPressed(component.Keys, ClickState.Up)) continue;
-                if (!component.TargetView.Transform.AnchoredRect.DotInRect(Undefined.MouseScreenPosition)) continue;
-                component.CallEvent(new UIMouseUpEvent(component.TargetView));
-                if (component.TargetView is NetworkUIView)
-                    Undefined.SendPackets(new UIComponentUpdatePacket(component));
+                var res = result.Get1();
+                res.Read(component =>
+                {
+                    if (!Undefined.IsPressed(component.Keys, ClickState.Up)) return;
+                    var inRect = false;
+                    component.TargetView.Transform.Read(transform => inRect = transform.AnchoredRect.DotInRect(Undefined.MouseScreenPosition));
+                    if (!inRect) return;
+                    component.Event.Invoke(new MouseUpEventData(component.TargetView));
+                    //if (component.TargetView is NetworkUIView)
+                      //  Undefined.SendPackets(new UIComponentUpdatePacket(res));
+                });
             }
 
             foreach (var result in _downHandlers)
             {
-                var component = result.Get1();
-                if (!Undefined.IsPressed(component.Keys, ClickState.Down)) continue;
-                if (!component.TargetView.Transform.AnchoredRect.DotInRect(Undefined.MouseScreenPosition)) continue;
-                component.CallEvent(new UIMouseDownEvent(component.TargetView));
-                if (component.TargetView is NetworkUIView)
-                    Undefined.SendPackets(new UIComponentUpdatePacket(component));
+                var res = result.Get1();
+                res.Read(component =>
+                {
+                    if (!Undefined.IsPressed(component.Keys, ClickState.Down)) return;
+                    var inRect = false;
+                    component.TargetView.Transform.Read(transform => inRect = transform.AnchoredRect.DotInRect(Undefined.MouseScreenPosition));
+                    if(!inRect) return;
+                    component.Event.Invoke(new MouseDownEventData(component.TargetView));
+                    if (component.TargetView is NetworkUIView)
+                        Undefined.SendPackets(new UIComponentUpdatePacket(res));
+                });
             }
 
             foreach (var result in _enterHandlers)
             {
-                var component = result.Get1();
-                var inRect = component.TargetView.Transform.AnchoredRect.DotInRect(Undefined.MouseScreenPosition);
-                var entered = _enteredComponents.Contains(component);
-                if (entered || !inRect)
+                var res = result.Get1();
+                res.Read(component =>
                 {
-                    if (_enteredComponents.Contains(component)) _enteredComponents.Remove(component);
-                    continue;
-                }
+                    var inRect = false;
+                    component.TargetView.Transform.Read(transform => inRect = transform.AnchoredRect.DotInRect(Undefined.MouseScreenPosition));
+                    var entered = _enteredComponents.Contains(res);
+                    if (entered || !inRect)
+                    {
+                        if (_enteredComponents.Contains(res)) _enteredComponents.Remove(res);
+                        return;
+                    }
 
-                if (!_enteredComponents.Contains(component))
-                    _enteredComponents.Add(component);
-                if (component.TargetView is NetworkUIView)
-                    Undefined.SendPackets(new UIComponentUpdatePacket(component));
+                    if (!_enteredComponents.Contains(res))
+                        _enteredComponents.Add(res);
+                    if (component.TargetView is NetworkUIView)
+                        Undefined.SendPackets(new UIComponentUpdatePacket(res));
+                });
             }
 
             foreach (var result in _exitHandlers)
             {
-                var component = result.Get1();
-                var outRect = !component.TargetView.Transform.AnchoredRect.DotInRect(Undefined.MouseScreenPosition);
-                var exited = _exitedComponents.Contains(component);
-                if (exited || !outRect)
+                var res = result.Get1();
+                res.Read(component =>
                 {
-                    if (_exitedComponents.Contains(component)) _exitedComponents.Remove(component);
-                    continue;
-                }
-
-                if (!_exitedComponents.Contains(component))
-                    _exitedComponents.Add(component);
-                if (component.TargetView is NetworkUIView)
-                    Undefined.SendPackets(new UIComponentUpdatePacket(component));
+                    var outRect = false;
+                    component.TargetView.Transform.Read(transform => outRect = !transform.AnchoredRect.DotInRect(Undefined.MouseScreenPosition));
+                    var exited = _exitedComponents.Contains(res);
+                    if (exited || !outRect)
+                    {
+                        if (_exitedComponents.Contains(res)) _exitedComponents.Remove(res);
+                        return;
+                    }
+                    if (!_exitedComponents.Contains(res))
+                        _exitedComponents.Add(res);
+                    if (component.TargetView is NetworkUIView)
+                        Undefined.SendPackets(new UIComponentUpdatePacket(res));
+                });
             }
         }
     }

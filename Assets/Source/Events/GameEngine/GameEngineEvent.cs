@@ -2,7 +2,7 @@ using Utils.Events;
 
 namespace Events.GameEngine
 {
-    public abstract class GameEngineEvent : Event
+    public abstract class GameEngineEvent : EventData
     {
     }
 }

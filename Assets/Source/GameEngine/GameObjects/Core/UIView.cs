@@ -3,69 +3,62 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using GameEngine.GameObjects.Core.Unity;
-using Networking;
+using UndefinedNetworking.Converters;
 using UndefinedNetworking.Events.UIEvents;
 using UndefinedNetworking.Exceptions;
-using UndefinedNetworking.GameEngine;
 using UndefinedNetworking.GameEngine.Components;
 using UndefinedNetworking.GameEngine.Scenes;
 using UndefinedNetworking.GameEngine.Scenes.UI;
 using UndefinedNetworking.GameEngine.Scenes.UI.Components;
 using Utils;
 using Utils.Events;
-using RectTransform = UnityEngine.RectTransform;
+using Component = UnityEngine.Component;
 
 namespace GameEngine.GameObjects.Core
 {
-    public sealed class UIView : ObjectCore, IUIView, IEventCaller<UICloseEvent>
+    public sealed class UIView : ObjectCore, IUIView
     {
-        private static readonly PropertyInfo ComponentInfo = typeof(UIUnityComponent).GetProperty("Component",
-            BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
 
-        private static readonly PropertyInfo TargetViewProperty = typeof(UIComponent).GetProperty("TargetView",
+        private static readonly PropertyInfo TargetViewProperty = typeof(UIComponentData).GetProperty("TargetView",
             BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)!;
 
-        private static readonly MethodInfo InitializeVoid = ReflectionUtils.GetMethod(typeof(Component), "Initialize")!;
         private readonly List<UIView> _childs;
-        private readonly List<UIComponent> _components = new();
-        private readonly RectTransform _unityTransform;
-
+        private readonly List<IComponent<UIComponentData>> _components = new();
+        public Event<UICloseEventData> OnClose { get; } = new();
         public UIView(ISceneViewer viewer, ViewParameters parameters)
         {
             Identifier = (uint)(uint.MaxValue - viewer.ActiveScene.Objects.Length);
             Viewer = viewer;
-            _unityTransform = (Instance as UnityUIObject)!.Transform;
-            var rectTransform = AddComponent<UndefinedNetworking.GameEngine.Scenes.UI.Components.RectTransform>();
-            rectTransform.ApplyParameters(parameters);
-            if (rectTransform.Parent is null && Undefined.Canvas?.Transform is { } canvas)
-                rectTransform.Parent = canvas;
-            rectTransform.Update();
-            Transform = rectTransform;
+            Transform = AddComponent<RectTransform>();
+            Transform.Modify(transform =>
+            {
+                if (parameters.Parent is null && Undefined.Canvas?.Transform is { } canvas)
+                    parameters.Parent = canvas;
+                transform.ApplyParameters(parameters);
+            });
         }
 
 
-        public UndefinedNetworking.GameEngine.Scenes.UI.Components.RectTransform Transform { get; }
+        public IComponent<RectTransform> Transform { get; }
         public uint Identifier { get; }
         public ISceneViewer Viewer { get; }
-        public UIComponent[] Components => _components.ToArray();
+        public IComponent<UIComponentData>[] Components => _components.ToArray();
 
-        public T AddComponent<T>() where T : UIComponent, new()
+        public IComponent<T> AddComponent<T>() where T : UIComponentData, new()
         {
-            return AddComponent(typeof(T)) as T;
+            return AddComponent(typeof(T)) as IComponent<T>;
         }
 
-        public UIComponent AddComponent(Type type)
+        public IComponent<UIComponentData> AddComponent(Type type)
         {
-            if (!type.IsSubclassOf(typeof(UIComponent)))
-                throw new ComponentException($"type is not {nameof(UIComponent)}");
-            var ctor = ReflectionUtils.GetConstructor(type);
-            if (ctor == null) throw new ComponentException("component has no empty constructor");
-            var component = (ctor.Invoke(Array.Empty<object>()) as UIComponent)!;
+            if (!type.IsSubclassOf(typeof(UIComponentData)))
+                throw new ComponentException($"type is not {nameof(UIComponentData)}");
+            var component = Component<UIComponentData>.CreateInstance(type);
             InitializeComponent(component);
             return component;
         }
 
-        public UIComponent[] AddComponents(params Type[] types)
+        public IComponent<UIComponentData>[] AddComponents(params Type[] types)
         {
             return types.Select(AddComponent).ToArray();
         }
@@ -75,7 +68,7 @@ namespace GameEngine.GameObjects.Core
             Destroy();
         }
 
-        public bool ContainsComponent<T>() where T : UIComponent
+        public bool ContainsComponent<T>() where T : UIComponentData
         {
             return GetComponent(typeof(T)) != null;
         }
@@ -85,38 +78,36 @@ namespace GameEngine.GameObjects.Core
             return GetComponent(type) != null;
         }
 
-        public T GetComponent<T>() where T : UIComponent
+        public IComponent<T> GetComponent<T>() where T : UIComponentData
         {
-            return _components.FirstOrDefault(c => c.GetType() == typeof(T)) as T;
+            return _components.FirstOrDefault(c => c.DataTypeIs(typeof(T))) as IComponent<T>;
         }
 
-        public UIComponent GetComponent(Type type)
+        public bool TryGetComponent<T1>(out IComponent<T1> component) where T1 : UIComponentData
         {
-            return _components.FirstOrDefault(c => c.GetType() == type);
+            component = (IComponent<T1>)_components.FirstOrDefault(c => c.DataTypeIs(typeof(T1)));
+            return component is not null;
         }
+
+        public IComponent<UIComponentData> GetComponent(Type type) => _components.FirstOrDefault(c => c.DataTypeIs(type));
 
         protected override void DoDestroy()
         {
-            for (var i = 0; i < Transform.Childs.Count; i++) Transform.Childs[i].TargetView.Destroy();
+            
+            Transform.Read(transform =>
+            {
+                for (var i = 0; i < transform.Childs.Count; i++) transform.Childs[i].TargetView.Destroy();
+            });
         }
 
-        private void InitializeComponent(UIComponent component)
+        private void InitializeComponent(IComponent<UIComponentData> component)
         {
-            TargetViewProperty.SetValue(component, this);
-            if (component is UIUnityComponent adapter)
-                Undefined.CallSynchronously(() =>
-                {
-                    var unity = AddUnityComponent(adapter.ComponentType);
-                    ComponentInfo.SetValue(component, unity);
-                });
+            component.Modify(data =>
+            {
+                TargetViewProperty.SetValue(data, this);
+            });
             RequireComponent.AddRequirements(component, this);
-            InitializeVoid.Invoke(component, Array.Empty<object>());
             _components.Add(component);
-        }
-
-        public static implicit operator RectTransform(UIView view)
-        {
-            return view._unityTransform;
         }
     }
 }

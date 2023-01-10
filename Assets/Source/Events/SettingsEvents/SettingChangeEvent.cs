@@ -2,7 +2,7 @@ using Utils.Events;
 
 namespace Events.SettingsEvents
 {
-    public abstract class SettingChangeEvent : Event
+    public abstract class SettingChangeEvent : EventData
     {
     }
 }

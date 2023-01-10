@@ -1,4 +1,6 @@
+using System;
 using System.IO;
+using System.Reflection;
 using UnityEngine;
 using Logger = Networking.Loggers.Logger;
 
@@ -52,6 +54,19 @@ namespace GameEngine
         {
             WriteToFile(error);
             Debug.LogError(error);
+        }
+
+        public override void Error(Exception e)
+        {
+            switch (e)
+            {
+                case TargetInvocationException { InnerException: { } } invocationException:
+                    Undefined.Logger.Error($"{invocationException.InnerException.Message}\n{invocationException.InnerException.StackTrace}");
+                    break;
+                default:
+                    Undefined.Logger.Error($"{e.Message}\n{e.StackTrace}");
+                    break;
+            }
         }
 
         private void CheckLogFile()

@@ -11,11 +11,10 @@ namespace Gameplay
 
         public CameraControl()
         {
-            this.RegisterListener();
         }
 
         [EventHandler]
-        private void OnFixedTick(AsyncFixedTickEvent e)
+        private void OnFixedTick(AsyncFixedTickEventData e)
         {
             var dir = Dot2.Zero;
             if (Settings.Binds.CameraUp.IsPressed()) dir.Y = 1;

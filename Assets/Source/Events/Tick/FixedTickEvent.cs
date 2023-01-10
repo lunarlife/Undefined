@@ -2,7 +2,7 @@
 
 namespace Events.Tick
 {
-    public class FixedTickEvent : Event
+    public class FixedTickEvent : EventData
     {
     }
 }

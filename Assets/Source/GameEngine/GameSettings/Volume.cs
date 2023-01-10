@@ -9,7 +9,7 @@ namespace GameEngine.GameSettings
         private float _music;
         private float _environment;
         private float _interface;
-
+        public Event<VolumeChangeEvent> OnChanged { get; }
         public float Music
         {
             get => _music;
@@ -18,7 +18,7 @@ namespace GameEngine.GameSettings
                 if (!MathUtils.Clamp(value, 0, 100)) throw new SettingsException("music out of range");
                 _music = value;
                 Settings.Save();
-                EventManager.CallEvent(new VolumeChangeEvent());
+                OnChanged.Invoke(new VolumeChangeEvent());
             }
         }
 
@@ -30,7 +30,7 @@ namespace GameEngine.GameSettings
                 if (!MathUtils.Clamp(value, 0, 100)) throw new SettingsException("environment out of range");
                 _environment = value;
                 Settings.Save();
-                EventManager.CallEvent(new VolumeChangeEvent());
+                OnChanged.Invoke(new VolumeChangeEvent());
             }
         }
 
@@ -42,7 +42,7 @@ namespace GameEngine.GameSettings
                 if (!MathUtils.Clamp(value, 0, 100)) throw new SettingsException("interface out of range");
                 _interface = value;
                 Settings.Save();
-                EventManager.CallEvent(new VolumeChangeEvent());
+                OnChanged.Invoke(new VolumeChangeEvent());
             }
         }
 
@@ -54,6 +54,7 @@ namespace GameEngine.GameSettings
             _music = music;
             _environment = environment;
             _interface = @interface;
+            OnChanged = new Event<VolumeChangeEvent>();
         }
     }
 }

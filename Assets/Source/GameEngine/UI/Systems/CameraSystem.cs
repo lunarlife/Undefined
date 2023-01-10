@@ -1,12 +1,14 @@
 using GameEngine.Components;
+using GameEngine.GameObjects.Core;
 using UECS;
+using UndefinedNetworking.GameEngine.Components;
 using UnityEngine;
 
 namespace GameEngine.UI.Systems
 {
     public class CameraSystem : ISyncSystem
     {
-        [ChangeHandler] private Filter<CameraComponent> _cameraChanged;
+        [ChangeHandler] private Filter<IComponent<CameraComponent>> _cameraChanged;
 
 
         public void Init()
@@ -17,12 +19,14 @@ namespace GameEngine.UI.Systems
         {
             foreach (var result in _cameraChanged)
             {
-                var component = result.Get1();
-                if ((Camera)component.Component is not { } camera) continue;
-                camera.orthographic = component.Orthographic;
-                camera.orthographicSize = component.OrthographicSize;
-                camera.farClipPlane = component.FarClipPlane;
-                camera.nearClipPlane = component.NearClipPlane;
+                result.Get1().Read(component =>
+                {
+                    var camera = ((ObjectCore)component.TargetView).GetOrAddUnityComponent<Camera>();
+                    camera.orthographic = component.Orthographic;
+                    camera.orthographicSize = component.OrthographicSize;
+                    camera.farClipPlane = component.FarClipPlane;
+                    camera.nearClipPlane = component.NearClipPlane;
+                });
             }
         }
     }

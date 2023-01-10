@@ -2,7 +2,7 @@ using Utils.Events;
 
 namespace Events.Tick
 {
-    public class HalfSecondTickEvent : Event
+    public class HalfSecondTickEvent : EventData
     {
     }
 }
