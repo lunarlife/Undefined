@@ -5,6 +5,7 @@ using GameEngine.Exceptions;
 using GameEngine.GameObjects.Core.Unity;
 using UndefinedNetworking.Exceptions;
 using UndefinedNetworking.GameEngine.Scenes.UI;
+using UndefinedNetworking.GameEngine.Scenes.UI.Views;
 using UnityEngine;
 using Utils.Pool;
 using Object = UnityEngine.Object;

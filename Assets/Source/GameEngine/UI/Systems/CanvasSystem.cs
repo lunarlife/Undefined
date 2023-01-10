@@ -23,7 +23,7 @@ namespace GameEngine.UI.Systems
             {
                 result.Get1().Read(component =>
                 {
-                    var scaler = ((ObjectCore)component.TargetView).GetOrAddUnityComponent<CanvasScaler>();
+                    var scaler = ((ObjectCore)component.TargetObject).GetOrAddUnityComponent<CanvasScaler>();
                     scaler.uiScaleMode = component.ScaleMode;
                     scaler.referenceResolution = component.ReferenceResolution.ToUnityVector();
                     scaler.matchWidthOrHeight = component.MatchWidthOrHeight;
@@ -36,10 +36,10 @@ namespace GameEngine.UI.Systems
             {
                 result.Get1().Read(component =>
                 {
-                    var canvas = ((ObjectCore)component.TargetView).GetOrAddUnityComponent<UnityEngine.Canvas>();
+                    var canvas = ((ObjectCore)component.TargetObject).GetOrAddUnityComponent<UnityEngine.Canvas>();
                     component.Camera.Read(cameraRead =>
                     {
-                        canvas.worldCamera = ((ObjectCore)cameraRead.TargetView).GetOrAddUnityComponent<Camera>();
+                        canvas.worldCamera = ((ObjectCore)cameraRead.TargetObject).GetOrAddUnityComponent<Camera>();
                     });
                     canvas.planeDistance = component.PlaneDistance;
                     canvas.renderMode = component.RenderMode;

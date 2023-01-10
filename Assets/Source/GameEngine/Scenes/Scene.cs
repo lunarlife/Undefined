@@ -10,6 +10,7 @@ using UndefinedNetworking.GameEngine;
 using UndefinedNetworking.GameEngine.Scenes;
 using UndefinedNetworking.GameEngine.Scenes.Objects;
 using UndefinedNetworking.GameEngine.Scenes.UI;
+using UndefinedNetworking.GameEngine.Scenes.UI.Views;
 using Utils.Events;
 
 namespace GameEngine.Scenes
@@ -17,6 +18,9 @@ namespace GameEngine.Scenes
     public class Scene : IScene
     {
         private readonly Dictionary<uint, IObjectBase> _objects = new();
+
+        public void OpenView(IMultipleUIView view) => throw new ViewException("its a client eblan");
+        public bool ContainsView(IUIViewBase view) => _objects.ContainsValue(view);
 
         public Event<SceneUnloadEventData> SceneUnload { get; } = new();
         public Event<UIOpenEventData> UIOpen { get; } = new();
@@ -40,7 +44,7 @@ namespace GameEngine.Scenes
             var view = new UIView(Viewer, parameters);
             _objects.Add(view.Identifier, view);
             view.OnClose.AddListener(OnCloseView);
-            UIOpen.Invoke(new UIOpenEventData(view));
+            UIOpen.Invoke(new UIOpenEventData(view, Viewer));
             return view;
         }
 
@@ -56,7 +60,7 @@ namespace GameEngine.Scenes
             _objects.Remove(obj.Identifier);
         }
 
-        public IUIView GetView(uint identifier)
+        public IUIViewBase GetView(uint identifier)
         {
             var b = !_objects.ContainsKey(identifier);
             if (b) return null;
@@ -65,7 +69,7 @@ namespace GameEngine.Scenes
             return objectBase as IUIView ?? throw new ViewException("view not found");
         }
 
-        public bool TryGetView(uint identifier, out IUIView? view)
+        public bool TryGetView(uint identifier, out IUIViewBase view)
         {
             if (!_objects.ContainsKey(identifier) || _objects[identifier] is not IUIView v)
             {
@@ -82,7 +86,7 @@ namespace GameEngine.Scenes
         {
             var view = new NetworkUIView(Viewer, identifier);
             _objects.Add(view.Identifier, view);
-            UIOpen.Invoke(new UIOpenEventData(view));
+            UIOpen.Invoke(new UIOpenEventData(view, Viewer));
             return view;
         }
     }

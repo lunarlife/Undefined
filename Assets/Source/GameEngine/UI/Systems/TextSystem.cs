@@ -20,7 +20,7 @@ namespace GameEngine.UI.Systems
             {
                 result.Get1().Read(component =>
                 {
-                    var text = ((ObjectCore)component.TargetView).GetOrAddUnityComponent<TextMeshProUGUI>();
+                    var text = ((ObjectCore)component.TargetObject).GetOrAddUnityComponent<TextMeshProUGUI>();
                     text.color = component.Color.ToUnityColor();
                     text.fontStyle = component.FontStyle.ToUnityStyle();
                     var wrapping = component.Wrapping;
@@ -39,7 +39,7 @@ namespace GameEngine.UI.Systems
                     text.characterSpacing = size.CharacterSpacing;
                     text.characterWidthAdjustment = size.CharacterWidthAdjustment;
                     text.text = component.Content;
-                    component.TargetView.Transform.Update();
+                    component.TargetObject.Transform.Update();
                 });
             }
         }

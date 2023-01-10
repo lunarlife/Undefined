@@ -20,6 +20,8 @@ namespace GameEngine.UI.Systems
             foreach (var result in _changedUIs)
             {
                 var component = result.Get1();
+                if(!component.ShouldBeUpdatedRemote) return;
+                component.ShouldBeUpdatedRemote = false;
                 if(component.DataTypeIs(typeof(IClientChangeHandler)))
                     Undefined.SendPackets(new UIComponentUpdatePacket(component));
             }

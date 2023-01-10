@@ -8,6 +8,7 @@ using UndefinedNetworking.GameEngine.Components;
 using UndefinedNetworking.GameEngine.Input;
 using UndefinedNetworking.GameEngine.Scenes.UI;
 using UndefinedNetworking.GameEngine.Scenes.UI.Components;
+using UndefinedNetworking.GameEngine.Scenes.UI.Views;
 using Utils.Events;
 using Rect = Utils.Rect;
 
@@ -35,7 +36,7 @@ namespace GameEngine.UI.Systems
             {
                 result.Get1().Read(component =>
                 {
-                    var text = ((ObjectCore)component.TargetView).GetOrAddUnityComponent<TextMeshProUGUI>();
+                    var text = ((ObjectCore)component.TargetObject).GetOrAddUnityComponent<TextMeshProUGUI>();
                     text.color = component.Color.ToUnityColor();
                     text.fontStyle = component.FontStyle.ToUnityStyle();
                     var wrapping = component.Wrapping;
@@ -55,13 +56,13 @@ namespace GameEngine.UI.Systems
                     text.characterWidthAdjustment = size.CharacterWidthAdjustment;
                     text.text = component.Text;
                     IUIView view = null;
-                    component.TargetView.Transform.Read(transform =>
+                    component.TargetObject.Transform.Read(transform =>
                     {
-                        view = transform.Childs.FirstOrDefault(c => c.TargetView is UIView)?.TargetView;
+                        view = (IUIView)transform.Childs.FirstOrDefault(c => c.TargetObject is UIView)?.TargetObject;
                         if (view is not null) return;
-                        view = component.TargetView.Viewer.ActiveScene.OpenView(new ViewParameters
+                        view =  Undefined.Player.ActiveScene.OpenView(new ViewParameters
                         {
-                            Parent = component.TargetView.Transform
+                            Parent = component.TargetObject.Transform
                         });
                         view.AddComponent<ImageComponent>().Modify(image =>
                         {

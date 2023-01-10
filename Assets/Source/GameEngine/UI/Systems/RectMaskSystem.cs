@@ -28,7 +28,7 @@ namespace GameEngine.UI.Systems
             {
                 result.Get1().Read(component =>
                 {
-                    var image = ((ObjectCore)component.TargetView).GetOrAddUnityComponent<Image>();
+                    var image = ((ObjectCore)component.TargetObject).GetOrAddUnityComponent<Image>();
                     var shader = Undefined.ServerManager.InternalResourcesManager
                         .GetInternalShader(InternalShaderType.WorldRectMask).UnityShader;
                     var material = image.material.shader.name == shader.name ? image.material : new Material(shader);
@@ -41,9 +41,9 @@ namespace GameEngine.UI.Systems
             {
                 result.Get1().Read(component =>
                 {
-                    component.TargetView.Transform.Read(transform =>
+                    component.TargetObject.Transform.Read(transform =>
                     {
-                        var image = ((ObjectCore)component.TargetView).GetOrAddUnityComponent<Image>();
+                        var image = ((ObjectCore)component.TargetObject).GetOrAddUnityComponent<Image>();
                         var shader = Undefined.ServerManager.InternalResourcesManager
                             .GetInternalShader(InternalShaderType.ObjectRectMask).UnityShader;
                         var material = image.material.shader.name == shader.name ? image.material : new Material(shader);

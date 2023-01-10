@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -97,13 +98,13 @@ namespace GameEngine
         public static Event<KeyboardKeyUpEvent> OnKeyboardKeyUp { get; } = new();
         public static Event<KeyboardKeyPressEvent> OnKeyboardKeyPress { get; } = new();
 
-        private void Awake()
+        private void Start()
         {
             DontDestroyOnLoad(gameObject);
+            Undefined.Startup();
             IsAsyncTickWorking = true;
             IsAsyncFixedTickWorking = true;
             IsOneSecondTickWorking = true;
-            Undefined.Startup();
         }
 
         private async void Update()
@@ -112,7 +113,8 @@ namespace GameEngine
             {
                 Undefined.Canvas.GetComponent<Canvas>().Read(canvas =>
                 {
-                    if (((ObjectCore)canvas.TargetView).GetUnityComponent<UnityEngine.Canvas>() is not { } uCanvas) return;
+                    if (((ObjectCore)canvas.TargetObject).GetUnityComponent<UnityEngine.Canvas>() is not
+                        { } uCanvas) return;
                     if (!UIScale.Equals(uCanvas.scaleFactor))
                     {
                         UIScale = uCanvas.scaleFactor;
@@ -122,6 +124,7 @@ namespace GameEngine
                             transform.OriginalRect = new Rect(0, 0, (int)sizeDelta.x, (int)sizeDelta.y);
                         });
                     }
+
                     var mousePosition = Input.mousePosition;
                     MouseScroll = Input.mouseScrollDelta.normalized.y;
                     MouseDeltaUnscaled = new Dot2(mousePosition.x - MouseScreenPositionUnscaled.X,
@@ -130,26 +133,6 @@ namespace GameEngine
                     MouseScreenPosition = MouseScreenPositionUnscaled / UIScale;
                 });
             }
-            /*if (Undefined.Canvas?.GetComponent<Canvas>() is { Component: { } } vc &&
-                Undefined.Camera is not null)
-            {
-                var canvasComponent = (UnityEngine.Canvas)vc.Component;
-                if (!UIScale.Equals(canvasComponent.scaleFactor))
-                {
-                    UIScale = canvasComponent.scaleFactor;
-                    var sizeDelta = canvasComponent.GetComponent<RectTransform>().sizeDelta;
-                    Undefined.Canvas.Transform.OriginalRect = new Rect(0, 0, (int)sizeDelta.x, (int)sizeDelta.y);
-                }
-
-                var mousePosition = Input.mousePosition;
-                MouseScroll = Input.mouseScrollDelta.normalized.y;
-                MouseDeltaUnscaled = new Dot2(mousePosition.x - MouseScreenPositionUnscaled.X,
-                    mousePosition.y - MouseScreenPositionUnscaled.Y);
-                MouseScreenPositionUnscaled = new Dot2(mousePosition.x, mousePosition.y);
-                MouseScreenPosition = MouseScreenPositionUnscaled / UIScale;
-                //MouseWorldPosition = Undefined.Camera.CameraToWorldPositionSynchronously(MouseScreenPosition);
-            }*/
-
             lock (SyncLock)
             {
                 for (var i = 0; i < SyncActions.Count; i++)
@@ -219,7 +202,7 @@ namespace GameEngine
                 await Task.Run(() => { OnKeyboardWriting.Invoke(new KeyboardWriteEvent(input)); });
             }
 
-            var tickEvent = new SyncTickEventData(Time.unscaledDeltaTime);
+            var tickEvent = new SyncTickEventData(Time.deltaTime);
             OnSyncTick.Invoke(tickEvent);
             _event = tickEvent;
         }
@@ -235,6 +218,7 @@ namespace GameEngine
         {
             OnEngineStop.Invoke(new EngineStopEvent());
         }
+
         public static bool IsPressedAll(ClickState states, KeyboardKey[] codes)
         {
             lock (KeyLock)

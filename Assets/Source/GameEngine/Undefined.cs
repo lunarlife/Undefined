@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using Debugger;
 using Events.GameEngine;
 using Events.GameEngine.Keyboard;
-using Events.Networking.PlayerEvents;
 using Events.Tick;
 using GameEngine.Components;
 using GameEngine.Exceptions;
@@ -28,6 +27,7 @@ using UndefinedNetworking.GameEngine.Components;
 using UndefinedNetworking.GameEngine.Input;
 using UndefinedNetworking.GameEngine.Scenes;
 using UndefinedNetworking.GameEngine.Scenes.UI;
+using UndefinedNetworking.GameEngine.Scenes.UI.Views;
 using UndefinedNetworking.Gameplay.Chat;
 using UndefinedNetworking.Packets.Components;
 using UndefinedNetworking.Packets.Player;
@@ -54,7 +54,6 @@ namespace GameEngine
         private static RuntimePacketer _packeter;
         private static string _nickname;
         private static Stopwatch _connectionTimer;
-        private static readonly Dictionary<Identifier, NetPlayer> VisiblePlayers = new();
 
         private static DownloadingResource _downloadingResource;
         public static NetPlayer MyPlayer { get; private set; }
@@ -62,9 +61,6 @@ namespace GameEngine
 
         public static Logger Logger { get; } = new MainClientLogger();
         public static Event<KeyboardWriteEvent> OnKeyboardWriting => EngineEventsInvoker.OnKeyboardWriting;
-        public static Event<PlayerConnectedEvent> OnPlayerConnected { get; } = new();
-        public static Event<PlayerDisconnectEvent> OnPlayerDisconnect { get; } = new();
-
         public static bool IsSynchronously => Environment.CurrentManagedThreadId == _mainThreadId;
         public static bool IsStarted { get; private set; }
         public static IUIView Canvas { get; private set; }
@@ -84,6 +80,7 @@ namespace GameEngine
 
         public static void Startup()
         {
+            Application.targetFrameRate = 100;
             IsStarted = IsStarted ? throw new EngineException("engine is started") : true;
             _mainThreadId = Environment.CurrentManagedThreadId;
             var args = Environment.GetCommandLineArgs();
@@ -229,9 +226,7 @@ namespace GameEngine
                 case ServerInfoPacket sip:
                     RuntimePacketer.Tick = sip.Tick;
                     MyPlayer = new NetPlayer(sip.Identifier, _nickname);
-                    VisiblePlayers.Add(MyPlayer.Identifier, MyPlayer);
                     //_isConnected = true;
-                    OnPlayerConnected.Invoke(new PlayerConnectedEvent(MyPlayer));
                     var chatTypes = new Enum<ChatType>();
                     //var commands = new Enum<ClientCommand>();
                     /*if(sip.Chats is not null)
@@ -247,23 +242,8 @@ namespace GameEngine
                     IsConnected = true;
                     break;
                 case PlayerDisconnectPacket pdp:
-                    if (MyPlayer is null || pdp.Identifier == MyPlayer.Identifier)
-                    {
-                        DisconnectLocal(pdp.Cause, pdp.Message);
-                        break;
-                    }
-
-                    var p = VisiblePlayers[pdp.Identifier];
-                    OnPlayerDisconnect.Invoke(new PlayerDisconnectEvent(p, pdp.Cause, pdp.Message));
-                    Logger.Info($"{p.Nickname} disconnected");
-                    VisiblePlayers.Remove(pdp.Identifier);
+                    DisconnectLocal(pdp.Cause, pdp.Message);
                     MyPlayer = null;
-                    break;
-                case PlayerConnectPacket pcp:
-                    var player = new NetPlayer(pcp.Identitifer, pcp.Nickname);
-                    VisiblePlayers.Add(pcp.Identitifer, player);
-                    Logger.Info($"{player.Nickname} connected");
-                    OnPlayerConnected.Invoke( new PlayerConnectedEvent(player));
                     break;
                 case WorldPacket wp:
                     //CallSynchronously(() => World.LoadWorld(wp));
@@ -278,7 +258,6 @@ namespace GameEngine
                     SendPackets(new ClientPingPacket());
                     break;
                 case UIViewOpenPacket viewOpenPacket:
-                    Console.WriteLine("open");
                     var open = (NetworkUIView)((Scene)Player.ActiveScene).OpenNetworkView(viewOpenPacket.Identifier);
                     break;
                 case UIViewClosePacket viewClosePacket:
@@ -310,7 +289,7 @@ namespace GameEngine
 
         private static void DisconnectServer(DisconnectCause cause, string message)
         {
-            _packeter?.SendPacketNow(new PlayerDisconnectPacket(null, DisconnectCause.Leave, null));
+            _packeter?.SendPacketNow(new PlayerDisconnectPacket(DisconnectCause.Leave, null));
             DisconnectLocal(cause, message);
         }
 

@@ -29,15 +29,15 @@ namespace GameEngine.UI.Systems
             {
                 result.Get1().Read(component =>
                 {
-                    var view = component.TargetView;
+                    var view = component.TargetObject;
                     view.Transform.Read(transform =>
                     {
 
 
-                        if (transform.Childs.FirstOrDefault(ch => ch.TargetView is UIView)?.TargetView is not
+                        if (transform.Childs.FirstOrDefault(ch => ch.TargetObject is UIView)?.TargetObject is not
                             { } content)
                         {
-                            content = view.Viewer.ActiveScene.OpenView(new ViewParameters
+                            content = Undefined.Player.ActiveScene.OpenView(new ViewParameters
                             {
                                 Parent = view.Transform,
                                 OriginalRect = new Rect(0, 0, transform.OriginalRect.WidthHeight),
@@ -49,10 +49,10 @@ namespace GameEngine.UI.Systems
                         for (var index = 0; index < transform.Childs.Count; index++)
                         {
                             var tr = transform.Childs[index];
-                            if (tr.TargetView is UIView) continue;
-                            if (((ObjectCore)tr.TargetView).LocalParent != null) continue;
-                            ((ObjectCore)tr.TargetView).LocalParent = (ObjectCore)content;
-                            tr.TargetView.Transform.Update();
+                            if (tr.TargetObject is UIView) continue;
+                            if (((ObjectCore)tr.TargetObject).LocalParent != null) continue;
+                            ((ObjectCore)tr.TargetObject).LocalParent = (ObjectCore)content;
+                            tr.TargetObject.Transform.Update();
                         }
 
                         if (!transform.AnchoredRect.DotInRect(Undefined.MouseScreenPosition)) return;
@@ -80,10 +80,10 @@ namespace GameEngine.UI.Systems
             {
                 scroll.Get1().Read(component =>
                 {
-                    component.TargetView.Transform.Read(transform =>
+                    component.TargetObject.Transform.Read(transform =>
                     {
                         var aRect = transform.AnchoredRect;
-                        var mask = ((ObjectCore)component.TargetView).GetOrAddUnityComponent<RectMask2D>();
+                        var mask = ((ObjectCore)component.TargetObject).GetOrAddUnityComponent<RectMask2D>();
                         mask.padding = new Vector4(component.ViewRect.Position.X, component.ViewRect.Position.Y,
                             aRect.Width - (component.ViewRect.Position.X + component.ViewRect.Width), aRect.Height -
                             (component.ViewRect.Position.Y + component.ViewRect.Height));

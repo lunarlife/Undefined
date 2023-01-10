@@ -23,7 +23,7 @@ namespace GameEngine.UI.Systems
             {
                 result.Get1().Read(component =>
                 {
-                    var image = ((ObjectCore)component.TargetView).GetOrAddUnityComponent<Image>();
+                    var image = ((ObjectCore)component.TargetObject).GetOrAddUnityComponent<Image>();
                     // ReSharper disable once AssignNullToNotNullAttribute
                     image.sprite = (component.Sprite as Sprite)?.UnitySprite;
                     if (component.Shader is { } sh)

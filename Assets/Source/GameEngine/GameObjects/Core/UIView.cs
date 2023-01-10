@@ -10,6 +10,7 @@ using UndefinedNetworking.GameEngine.Components;
 using UndefinedNetworking.GameEngine.Scenes;
 using UndefinedNetworking.GameEngine.Scenes.UI;
 using UndefinedNetworking.GameEngine.Scenes.UI.Components;
+using UndefinedNetworking.GameEngine.Scenes.UI.Views;
 using Utils;
 using Utils.Events;
 using Component = UnityEngine.Component;
@@ -19,11 +20,12 @@ namespace GameEngine.GameObjects.Core
     public sealed class UIView : ObjectCore, IUIView
     {
 
-        private static readonly PropertyInfo TargetViewProperty = typeof(UIComponentData).GetProperty("TargetView",
+        private static readonly PropertyInfo TargetViewProperty = typeof(ComponentData).GetProperty("TargetObject",
             BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)!;
 
         private readonly List<UIView> _childs;
         private readonly List<IComponent<UIComponentData>> _components = new();
+
         public Event<UICloseEventData> OnClose { get; } = new();
         public UIView(ISceneViewer viewer, ViewParameters parameters)
         {
@@ -68,6 +70,7 @@ namespace GameEngine.GameObjects.Core
             Destroy();
         }
 
+        public bool ContainsViewer(ISceneViewer viewer) => Viewer == Viewer;
         public bool ContainsComponent<T>() where T : UIComponentData
         {
             return GetComponent(typeof(T)) != null;
@@ -96,7 +99,7 @@ namespace GameEngine.GameObjects.Core
             
             Transform.Read(transform =>
             {
-                for (var i = 0; i < transform.Childs.Count; i++) transform.Childs[i].TargetView.Destroy();
+                for (var i = 0; i < transform.Childs.Count; i++) transform.Childs[i].TargetObject.Destroy();
             });
         }
 

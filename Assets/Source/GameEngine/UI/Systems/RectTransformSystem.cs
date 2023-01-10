@@ -21,7 +21,7 @@ namespace GameEngine.UI.Systems
             {
                 result.Get1().Read(component =>
                 {
-                    var view = component.TargetView;
+                    var view = component.TargetObject;
                     var objectCore = (ObjectCore)view;
                     var transform = objectCore.GetOrAddUnityComponent<UnityEngine.RectTransform>();
                     if (view == Undefined.Camera ||
@@ -30,7 +30,7 @@ namespace GameEngine.UI.Systems
                     else if (objectCore.LocalParent == null)
                         (component.Parent ?? Undefined.Canvas.Transform)?.Read(parent =>
                         {
-                            transform.SetParent(((ObjectCore)parent.TargetView)
+                            transform.SetParent(((ObjectCore)parent.TargetObject)
                                 .GetUnityComponent<UnityEngine.RectTransform>());
                         });
                     transform.anchorMin = Vector2.zero;

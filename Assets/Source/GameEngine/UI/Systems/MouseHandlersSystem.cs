@@ -34,19 +34,19 @@ namespace GameEngine.UI.Systems
                 res.Read(component =>
                 {
                     var holding = false;
-                    component.TargetView.Transform.Read(transform => holding = transform.AnchoredRect.DotInRect(Undefined.MouseScreenPosition) &&
+                    component.TargetObject.Transform.Read(transform => holding = transform.AnchoredRect.DotInRect(Undefined.MouseScreenPosition) &&
                                                                                Undefined.IsPressed(component.Keys));
                     var pHolding = component.IsHolding;
                     component.IsHolding = holding;
                     if (!holding)
                     {
-                        if (pHolding && component.TargetView is NetworkUIView)
+                        if (pHolding && component.TargetObject is NetworkUIView)
                             Undefined.SendPackets(new UIComponentUpdatePacket(res));
                         return;
                     }
 
-                    component.Event.Invoke(new MouseHoldingEventData(component.TargetView));
-                    if (pHolding || component.TargetView is not NetworkUIView) return;
+                    component.Event.Invoke(new MouseHoldingEventData(component.TargetObject));
+                    if (pHolding || component.TargetObject is not NetworkUIView) return;
                     Undefined.SendPackets(new UIComponentUpdatePacket(res));
                 });
                
@@ -59,10 +59,10 @@ namespace GameEngine.UI.Systems
                 {
                     if (!Undefined.IsPressed(component.Keys, ClickState.Up)) return;
                     var inRect = false;
-                    component.TargetView.Transform.Read(transform => inRect = transform.AnchoredRect.DotInRect(Undefined.MouseScreenPosition));
+                    component.TargetObject.Transform.Read(transform => inRect = transform.AnchoredRect.DotInRect(Undefined.MouseScreenPosition));
                     if (!inRect) return;
-                    component.Event.Invoke(new MouseUpEventData(component.TargetView));
-                    //if (component.TargetView is NetworkUIView)
+                    component.Event.Invoke(new MouseUpEventData(component.TargetObject));
+                    //if (component.TargetObject is NetworkUIView)
                       //  Undefined.SendPackets(new UIComponentUpdatePacket(res));
                 });
             }
@@ -74,10 +74,10 @@ namespace GameEngine.UI.Systems
                 {
                     if (!Undefined.IsPressed(component.Keys, ClickState.Down)) return;
                     var inRect = false;
-                    component.TargetView.Transform.Read(transform => inRect = transform.AnchoredRect.DotInRect(Undefined.MouseScreenPosition));
+                    component.TargetObject.Transform.Read(transform => inRect = transform.AnchoredRect.DotInRect(Undefined.MouseScreenPosition));
                     if(!inRect) return;
-                    component.Event.Invoke(new MouseDownEventData(component.TargetView));
-                    if (component.TargetView is NetworkUIView)
+                    component.Event.Invoke(new MouseDownEventData(component.TargetObject));
+                    if (component.TargetObject is NetworkUIView)
                         Undefined.SendPackets(new UIComponentUpdatePacket(res));
                 });
             }
@@ -88,7 +88,7 @@ namespace GameEngine.UI.Systems
                 res.Read(component =>
                 {
                     var inRect = false;
-                    component.TargetView.Transform.Read(transform => inRect = transform.AnchoredRect.DotInRect(Undefined.MouseScreenPosition));
+                    component.TargetObject.Transform.Read(transform => inRect = transform.AnchoredRect.DotInRect(Undefined.MouseScreenPosition));
                     var entered = _enteredComponents.Contains(res);
                     if (entered || !inRect)
                     {
@@ -98,7 +98,7 @@ namespace GameEngine.UI.Systems
 
                     if (!_enteredComponents.Contains(res))
                         _enteredComponents.Add(res);
-                    if (component.TargetView is NetworkUIView)
+                    if (component.TargetObject is NetworkUIView)
                         Undefined.SendPackets(new UIComponentUpdatePacket(res));
                 });
             }
@@ -109,7 +109,7 @@ namespace GameEngine.UI.Systems
                 res.Read(component =>
                 {
                     var outRect = false;
-                    component.TargetView.Transform.Read(transform => outRect = !transform.AnchoredRect.DotInRect(Undefined.MouseScreenPosition));
+                    component.TargetObject.Transform.Read(transform => outRect = !transform.AnchoredRect.DotInRect(Undefined.MouseScreenPosition));
                     var exited = _exitedComponents.Contains(res);
                     if (exited || !outRect)
                     {
@@ -118,7 +118,7 @@ namespace GameEngine.UI.Systems
                     }
                     if (!_exitedComponents.Contains(res))
                         _exitedComponents.Add(res);
-                    if (component.TargetView is NetworkUIView)
+                    if (component.TargetObject is NetworkUIView)
                         Undefined.SendPackets(new UIComponentUpdatePacket(res));
                 });
             }

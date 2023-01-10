@@ -21,7 +21,7 @@ namespace GameEngine.UI.Systems
             {
                 result.Get1().Read(component =>
                 {
-                    var camera = ((ObjectCore)component.TargetView).GetOrAddUnityComponent<Camera>();
+                    var camera = ((ObjectCore)component.TargetObject).GetOrAddUnityComponent<Camera>();
                     camera.orthographic = component.Orthographic;
                     camera.orthographicSize = component.OrthographicSize;
                     camera.farClipPlane = component.FarClipPlane;
